@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="WpfCustomControls.NumericUpDown"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wpfCustomControls="clr-namespace:WpfCustomControls"
+             MinWidth="36" MinHeight="22"
+             IsTabStop="False">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="20"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <TextBox x:Name="TextBoxNumber" x:FieldModifier="private" Grid.RowSpan="2" PreviewKeyDown="BlockSpecialChars" PreviewTextInput="ValidateInput" TextChanged="NumberChanged" TabIndex="{Binding Path=TabIndex, RelativeSource={RelativeSource AncestorType={x:Type wpfCustomControls:NumericUpDown}}}"/>
+        <RepeatButton Content="▲" Grid.Column="1" FontSize="5" Click="IncreaseValue" PreviewMouseUp="Buttons_MouseUp" IsTabStop="False"/>
+        <RepeatButton Content="▼" Grid.Column="1" Grid.Row="1" FontSize="5" Click="DecreaseValue" PreviewMouseUp="Buttons_MouseUp" IsTabStop="False"/>
+    </Grid>
+</UserControl>
