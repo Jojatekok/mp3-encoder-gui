@@ -14,7 +14,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <TextBox x:Name="TextBoxNumber" x:FieldModifier="private" Grid.RowSpan="2" PreviewKeyDown="BlockSpecialChars" PreviewTextInput="ValidateInput" TextChanged="NumberChanged" TabIndex="{Binding Path=TabIndex, RelativeSource={RelativeSource AncestorType={x:Type wpfCustomControls:NumericUpDown}}}"/>
+        <wpfCustomControls:NumberBox x:Name="NumberBox1" x:FieldModifier="private" Grid.RowSpan="2" TabIndex="{Binding Path=TabIndex, RelativeSource={RelativeSource AncestorType={x:Type wpfCustomControls:NumericUpDown}}}"/>
         <RepeatButton Content="▲" Grid.Column="1" FontSize="5" Click="IncreaseValue" PreviewMouseUp="Buttons_MouseUp" IsTabStop="False"/>
         <RepeatButton Content="▼" Grid.Column="1" Grid.Row="1" FontSize="5" Click="DecreaseValue" PreviewMouseUp="Buttons_MouseUp" IsTabStop="False"/>
     </Grid>

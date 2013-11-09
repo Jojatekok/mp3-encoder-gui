@@ -12,121 +12,34 @@ namespace WpfCustomControls
     {
         #region Declarations
 
-        private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
-
-        private bool _isTextChangedByUser = true;
-        private bool _isMinimumWarningActive;
-
-        private uint _value;
-        public uint Value
+        public uint? Value
         {
-            get { return _value; }
-
-            set {
-                if (!IsInitialized) return;
-
-                if (value < Minimum) {
-                    _isMinimumWarningActive = true;
-                    value = Minimum;
-
-                } else if (value > Maximum) {
-                    value = Maximum;
-                }
-
-                if (value == _value && value != Minimum) return;
-
-                _value = value;
-
-                var oldSelectionStart = TextBoxNumber.SelectionStart;
-                _isTextChangedByUser = false;
-                TextBoxNumber.Text = _value.ToString(InvariantCulture);
-                _isTextChangedByUser = true;
-
-                if (_value == Minimum && _isMinimumWarningActive) {
-                    TextBoxNumber.SelectAll();
-                    _isMinimumWarningActive = false;
-                } else if (_value == Maximum) {
-                    TextBoxNumber.SelectionStart = TextBoxNumber.Text.Length;
-                } else {
-                    TextBoxNumber.SelectionStart = oldSelectionStart;
-                }
-            }
+            get { return NumberBox1.Value; }
+            set { NumberBox1.Value = value; }
         }
 
-        private uint _minimum;
         public uint Minimum {
-            get { return _minimum; }
-
-            set {
-                if (value > Maximum) { value = Maximum; }
-                _minimum = value;
-
-                if (Value < _minimum) {
-                    if (TextBoxNumber.Text.Length == 0) {
-                        _value = _minimum;
-                    } else {
-                        Value = _minimum;
-                    }
-                }
-            }
+            get { return NumberBox1.Minimum; }
+            set { NumberBox1.Minimum = value; }
         }
 
-        private uint _maximum = uint.MaxValue;
         public uint Maximum {
-            get { return _maximum; }
-
-            set {
-                if (value < Minimum) { value = Minimum; }
-                _maximum = value;
-
-                if (Value > _maximum) {
-                    if (TextBoxNumber.Text.Length == 0) {
-                        _value = _maximum;
-                    } else {
-                        Value = _maximum;
-                    }
-                }
-            }
-        }
-
-        #endregion
-
-        #region Creation
-
-        public NumericUpDown()
-        {
-            InitializeComponent();
+            get { return NumberBox1.Maximum; }
+            set { NumberBox1.Maximum = value; }
         }
 
         #endregion
 
         #region Methods
 
-        private void ValidateInput(object sender, TextCompositionEventArgs e)
+        public NumericUpDown()
         {
-            if (!char.IsDigit(e.Text[0]) || (Value == Maximum && TextBoxNumber.SelectionLength == 0)) {
-                e.Handled = true;
-            }
-        }
-
-        private void NumberChanged(object sender, TextChangedEventArgs e)
-        {
-            if (TextBoxNumber.Text.Length != 0 && _isTextChangedByUser) {
-                uint newValue;
-                Value = uint.TryParse(TextBoxNumber.Text, out newValue) ? newValue : Maximum;
-            }
-        }
-
-        private void BlockSpecialChars(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Space) {
-                e.Handled = true;
-            }
+            InitializeComponent();
         }
 
         private void IncreaseValue(object sender, RoutedEventArgs e)
         {
-            if (TextBoxNumber.Text.Length == 0) {
+            if (Value == null) {
                 Value = Minimum;
             } else {
                 Value += 1;
@@ -135,8 +48,8 @@ namespace WpfCustomControls
 
         private void DecreaseValue(object sender, RoutedEventArgs e)
         {
-            if (TextBoxNumber.Text.Length == 0) {
-                Value = Minimum;
+            if (Value == null) {
+                Value = Maximum;
             } else {
                 Value -= 1;
             }
@@ -145,12 +58,12 @@ namespace WpfCustomControls
         private void Buttons_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (Value != Minimum) {
-                TextBoxNumber.SelectionStart = TextBoxNumber.Text.Length;
+                NumberBox1.TextBoxNumber.SelectionStart = NumberBox1.TextBoxNumber.Text.Length;
             } else {
-                TextBoxNumber.SelectAll();
+                NumberBox1.TextBoxNumber.SelectAll();
             }
 
-            TextBoxNumber.Focus();
+            NumberBox1.TextBoxNumber.Focus();
         }
 
         #endregion

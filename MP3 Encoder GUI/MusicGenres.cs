@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Mp3EncoderGui
+namespace MP3EncoderGUI
 {
     public static class MusicGenres
     {

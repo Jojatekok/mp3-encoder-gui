@@ -1,23 +1,15 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace Mp3EncoderGui
+namespace MP3EncoderGUI
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -27,6 +19,8 @@ namespace Mp3EncoderGui
         const string LameLocation = @"lame\lame.exe";
         const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
 
+        private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
+
         private Process _lameProc;
         private SynchronizationContext _syncContext;
 
@@ -35,14 +29,9 @@ namespace Mp3EncoderGui
         public MainWindow()
         {
             InitializeComponent();
-
             _syncContext = SynchronizationContext.Current;
 
             ComboBoxGenre.ItemsSource = MusicGenres.GenreDictionary.Keys;
-            DataObject.AddPastingHandler(TextBoxTrack1, new DataObjectPastingEventHandler(TextBoxTracks_OnPaste));
-            DataObject.AddPastingHandler(TextBoxTrack2, new DataObjectPastingEventHandler(TextBoxTracks_OnPaste));
-
-            ProgressBarEncoding.Text = "Encoding...";
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -63,7 +52,7 @@ namespace Mp3EncoderGui
 
         private void TextBoxInputFile_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (TextBoxInputFile.Text != string.Empty) {
+            if (TextBoxInputFile.Text.Length != 0) {
                 RecommendOutputFileName();
             } else {
                 TextBoxOutputFile.Text = string.Empty;
@@ -72,7 +61,7 @@ namespace Mp3EncoderGui
 
         private void TextBoxOutputFile_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (TextBoxOutputFile.Text == string.Empty && TextBoxInputFile.Text != string.Empty) {
+            if (TextBoxOutputFile.Text.Length == 0 && TextBoxInputFile.Text.Length != 0) {
                 RecommendOutputFileName();
             }
         }
@@ -95,26 +84,26 @@ namespace Mp3EncoderGui
 
             var inputFile = TextBoxInputFile.Text;
 
-            if (inputFile != string.Empty && File.Exists(inputFile)) {
+            if (inputFile.Length != 0 && File.Exists(inputFile)) {
                 var encParams = DefaultEncodingParams;
 
                 // [ID3] Title
-                if (TextBoxTitle.Text != string.Empty) {
+                if (TextBoxTitle.Text.Length != 0) {
                     encParams += " --tt \"" + TextBoxTitle.Text + "\"";
                 }
 
                 // [ID3] Artist
-                if (TextBoxArtist.Text != string.Empty) {
+                if (TextBoxArtist.Text.Length != 0) {
                     encParams += " --ta \"" + TextBoxArtist.Text + "\"";
                 }
 
                 // [ID3] Album
-                if (TextBoxAlbum.Text != string.Empty) {
+                if (TextBoxAlbum.Text.Length != 0) {
                     encParams += " --tl \"" + TextBoxAlbum.Text + "\"";
                 }
 
                 // [ID3] Genre
-                if (ComboBoxGenre.Text != string.Empty) {
+                if (ComboBoxGenre.Text.Length != 0) {
                     byte genreId;
                     if (MusicGenres.GenreDictionary.TryGetValue(ComboBoxGenre.Text, out genreId)) {
                         encParams += " --tg " + genreId;
@@ -129,15 +118,15 @@ namespace Mp3EncoderGui
                 }
 
                 // [ID3] Track
-                if (TextBoxTrack1.Text != string.Empty) {
-                    encParams += " --tn " + TextBoxTrack1.Text;
-                    if (TextBoxTrack2.Text != string.Empty) {
-                        encParams += "/" + TextBoxTrack2.Text;
+                if (NumberBoxTrack1.Value != null) {
+                    encParams += " --tn " + NumberBoxTrack1.Value;
+                    if (NumberBoxTrack2.Value != null) {
+                        encParams += "/" + NumberBoxTrack2.Value;
                     }
                 }
 
                 // [ID3] Comment
-                if (TextBoxComment.Text != string.Empty) {
+                if (TextBoxComment.Text.Length != 0) {
                     encParams += " --tc \"" + TextBoxComment.Text + "\"";
                 }
 
@@ -185,8 +174,8 @@ namespace Mp3EncoderGui
             if (outputText != null && outputText.Contains("%)")) {
                 var tmp1 = outputText.Substring(0, outputText.IndexOf('(') - 1).Replace(" ", string.Empty);
                 var tmp2 = tmp1.Split('/');
-                
-                double value = double.Parse(tmp2[0]);
+
+                double value = double.Parse(tmp2[0], InvariantCulture);
                 _syncContext.Send(_ => ProgressBarEncoding.Value = value, null);
 
                 double maximum;
@@ -255,63 +244,14 @@ namespace Mp3EncoderGui
             }
         }
 
-        private void TextBoxTracks_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void NumberBoxTrack1_ValueChanged(object sender, RoutedEventArgs e)
         {
-            ValidateTrack(e.Text, sender as TextBox);
-            e.Handled = true;
-        }
-
-        private void TextBoxTracks_OnPaste(object sender, DataObjectPastingEventArgs e)
-        {
-            if (e.SourceDataObject.GetDataPresent(System.Windows.DataFormats.Text)) {
-                ValidateTrack(e.SourceDataObject.GetData(DataFormats.Text) as string, sender as TextBox);
-            }
-
-            e.CancelCommand();
-        }
-
-        private bool StringIsNumber(string input)
-        {
-            for (var i = 0; i != input.Length; i++) {
-                var tmp = input[i];
-                if (tmp < '0' || tmp > '9') {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private void ValidateTrack(string input, TextBox trackTextBox)
-        {
-            if (!StringIsNumber(input) || trackTextBox.Text == "255"){
-                return;
-            }
-
-            byte tmp1;
-            var tmp2 = trackTextBox.SelectionStart;
-            var combinedText = trackTextBox.Text + input;
-
-            if (!byte.TryParse(combinedText, out tmp1)) {
-                trackTextBox.Text = "255";
-
-            } else if (combinedText == "0") {
-                trackTextBox.Text = "1";
+            if (NumberBoxTrack1.Value != null) {
+                NumberBoxTrack2.IsEnabled = true;
 
             } else {
-                trackTextBox.Text = tmp1.ToString();
-            }
-
-            trackTextBox.SelectionStart = tmp2 + 1;
-        }
-
-        private void TextBoxTrack1_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (TextBoxTrack1.Text != string.Empty) {
-                TextBoxTrack2.IsEnabled = true;
-            } else {
-                TextBoxTrack2.IsEnabled = false;
-                TextBoxTrack2.Text = string.Empty;
+                NumberBoxTrack2.IsEnabled = false;
+                NumberBoxTrack2.Clear();
             }
         }
 
