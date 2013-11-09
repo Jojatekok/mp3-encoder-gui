@@ -16,6 +16,8 @@ namespace MP3EncoderGUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region Declarations
+
         const string LameLocation = @"lame\lame.exe";
         const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
 
@@ -25,6 +27,12 @@ namespace MP3EncoderGUI
         private SynchronizationContext _syncContext;
 
         private string _coverArtPath;
+
+        #endregion
+
+        #region Methods
+
+        #region Window-related
 
         public MainWindow()
         {
@@ -47,6 +55,34 @@ namespace MP3EncoderGUI
                 }
 
                 _lameProc.Dispose();
+            }
+        }
+
+        #endregion
+
+        #region File locations
+
+        private void ButtonInput_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog() {
+                Filter = "All files|*|Waveform Audio File (*.wav, *.wave)|*.wav;*.wave"
+            };
+
+            if (dlg.ShowDialog() == true) {
+                TextBoxInputFile.Text = dlg.FileName;
+            }
+        }
+
+        private void ButtonOutput_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog() {
+                Filter = "All files|*|MP3 File (*.mp3)|*.mp3",
+                FilterIndex = 2,
+                OverwritePrompt = false
+            };
+
+            if (dlg.ShowDialog() == true) {
+                TextBoxOutputFile.Text = dlg.FileName;
             }
         }
 
@@ -77,14 +113,67 @@ namespace MP3EncoderGUI
             }
         }
 
+        #endregion
+
+        #region Encoding options
+
+        private void NumberBoxTrack1_ValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (NumberBoxTrack1.Value != null) {
+                NumberBoxTrack2.IsEnabled = true;
+
+            } else {
+                NumberBoxTrack2.IsEnabled = false;
+                NumberBoxTrack2.Clear();
+            }
+        }
+
+        private void ButtonChangeCoverArt_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Filter = "All files|*|Recommended image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|JPEG files (*.jpg, *.jpeg, *.jpe)|*.jpg;*.jpeg;*.jpe|PNG files (*.png)|*.png|GIF files (*.gif)|*.gif";
+            dlg.FilterIndex = 2;
+
+            if (dlg.ShowDialog() == true) {
+                try {
+                    ImageCoverArt.Source = new BitmapImage(new Uri(dlg.FileName));
+                    _coverArtPath = dlg.FileName;
+                    ButtonChangeCoverArt.Content = "Change";
+                    ButtonRemoveCoverArt.IsEnabled = true;
+                } catch { }
+            }
+        }
+
+        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
+        {
+            ImageCoverArt.Source = null;
+            _coverArtPath = null;
+            ButtonRemoveCoverArt.IsEnabled = false;
+            ButtonChangeCoverArt.Content = "Add";
+        }
+
+        #endregion
+
+        #region Start/stop encoding
+
         private void ButtonStart_Click(object sender, RoutedEventArgs e)
         {
             GridProgress.Visibility = Visibility.Visible;
             ButtonStart.Visibility = Visibility.Hidden;
 
             var inputFile = TextBoxInputFile.Text;
+            FileInfo outputFileInfo;
 
             if (inputFile.Length != 0 && File.Exists(inputFile)) {
+                try {
+                    outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
+                } catch {
+                    MessageBox.Show("The output file's path is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ButtonStart.Visibility = Visibility.Visible;
+                    GridProgress.Visibility = Visibility.Hidden;
+                    return;
+                }
+
                 var encParams = DefaultEncodingParams;
 
                 // [ID3] Title
@@ -113,7 +202,7 @@ namespace MP3EncoderGUI
                 }
 
                 // [ID3] Year
-                if (TextBoxYear.Value != 0) {
+                if (TextBoxYear.Value != null) {
                     encParams += " --ty " + TextBoxYear.Value;
                 }
 
@@ -137,10 +226,11 @@ namespace MP3EncoderGUI
 
                 if (_lameProc != null) { _lameProc.Dispose(); }
 
+                outputFileInfo.Directory.Create();
                 _lameProc = new Process() {
                     StartInfo = new ProcessStartInfo() {
                         FileName = AppDomain.CurrentDomain.BaseDirectory + LameLocation,
-                        Arguments = encParams + " \"" + inputFile + "\" \"" + TextBoxOutputFile.Text + "\"",
+                        Arguments = encParams + " \"" + inputFile + "\" \"" + outputFileInfo.FullName + "\"",
                         CreateNoWindow = true,
                         UseShellExecute = false,
                         RedirectStandardError = true
@@ -220,63 +310,8 @@ namespace MP3EncoderGUI
             );
         }
 
-        private void ButtonInput_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog() {
-                Filter = "All files|*|Waveform Audio File (*.wav, *.wave)|*.wav;*.wave"
-            };
+        #endregion
 
-            if (dlg.ShowDialog() == true) {
-                TextBoxInputFile.Text = dlg.FileName;
-            }
-        }
-
-        private void ButtonOutput_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new SaveFileDialog() {
-                Filter = "All files|*|MP3 File (*.mp3)|*.mp3",
-                FilterIndex = 2,
-                OverwritePrompt = false
-            };
-
-            if (dlg.ShowDialog() == true) {
-                TextBoxOutputFile.Text = dlg.FileName;
-            }
-        }
-
-        private void NumberBoxTrack1_ValueChanged(object sender, RoutedEventArgs e)
-        {
-            if (NumberBoxTrack1.Value != null) {
-                NumberBoxTrack2.IsEnabled = true;
-
-            } else {
-                NumberBoxTrack2.IsEnabled = false;
-                NumberBoxTrack2.Clear();
-            }
-        }
-
-        private void ButtonChangeCoverArt_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "All files|*|Recommended image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|JPEG files (*.jpg, *.jpeg, *.jpe)|*.jpg;*.jpeg;*.jpe|PNG files (*.png)|*.png|GIF files (*.gif)|*.gif";
-            dlg.FilterIndex = 2;
-
-            if (dlg.ShowDialog() == true) {
-                try {
-                    ImageCoverArt.Source = new BitmapImage(new Uri(dlg.FileName));
-                    _coverArtPath = dlg.FileName;
-                    ButtonChangeCoverArt.Content = "Change";
-                    ButtonRemoveCoverArt.IsEnabled = true;
-                } catch { }
-            }
-        }
-
-        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
-        {
-            ImageCoverArt.Source = null;
-            _coverArtPath = null;
-            ButtonRemoveCoverArt.IsEnabled = false;
-            ButtonChangeCoverArt.Content = "Add";
-        }
+        #endregion
     }
 }
