@@ -14,19 +14,18 @@ namespace MP3EncoderGUI
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         #region Declarations
 
-        const string LameLocation = @"lame\lame.exe";
-        const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
-
-        private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
+        public static readonly string LameEncoderLocation = AppDomain.CurrentDomain.BaseDirectory + @"lame\lame.exe";
 
         private Process _lameProc;
         private SynchronizationContext _syncContext;
 
-        private string _coverArtPath;
+        public string CoverArtPath { get; private set; }
+        private FileStream _coverArtFileStream;
+        private MemoryStream _coverArtMemStream;
 
         #endregion
 
@@ -46,7 +45,7 @@ namespace MP3EncoderGUI
         {
             if (_lameProc != null) {
                 if (!_lameProc.HasExited) {
-                    if (MessageBox.Show("Are you sure you want to exit?", "The encoding is still in progress", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes) {
+                    if (Messages.ShowWarning(this, Messages.ExitConfirmationMessage, Messages.ExitConfirmationTitle) == MessageBoxResult.Yes) {
                         _lameProc.Kill();
                     } else {
                         e.Cancel = true;
@@ -67,7 +66,7 @@ namespace MP3EncoderGUI
             var dlg = new OpenFileDialog() {
                 Filter = "All files|*|Waveform Audio File (*.wav, *.wave)|*.wav;*.wave"
             };
-
+            
             if (dlg.ShowDialog() == true) {
                 TextBoxInputFile.Text = dlg.FileName;
             }
@@ -136,18 +135,47 @@ namespace MP3EncoderGUI
 
             if (dlg.ShowDialog() == true) {
                 try {
-                    ImageCoverArt.Source = new BitmapImage(new Uri(dlg.FileName));
-                    _coverArtPath = dlg.FileName;
+                    // Dispose the previous cover art streams if necessary
+                    DisposeCoverArtStreams();
+                    
+                    _coverArtFileStream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096);
+                    _coverArtMemStream = new MemoryStream(Helper.ReadAllBytes(_coverArtFileStream));
+                    
+                    var image = new BitmapImage();
+                    image.BeginInit();
+                    image.StreamSource = _coverArtMemStream;
+                    image.EndInit();
+
+                    ImageCoverArt.Source = image;
+
+                    CoverArtPath = dlg.FileName;
                     ButtonChangeCoverArt.Content = "Change";
                     ButtonRemoveCoverArt.IsEnabled = true;
                 } catch { }
             }
         }
 
-        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
+        private void DisposeCoverArtStreams()
         {
             ImageCoverArt.Source = null;
-            _coverArtPath = null;
+            CoverArtPath = null;
+
+            if (_coverArtFileStream != null) {
+                if (_coverArtMemStream != null) {
+                    _coverArtMemStream.Dispose();
+                    _coverArtMemStream = null;
+                }
+
+                _coverArtFileStream.Dispose();
+                _coverArtFileStream = null;
+            }
+        }
+
+        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
+        {
+            // Dispose the previous cover art streams if necessary
+            DisposeCoverArtStreams();
+
             ButtonRemoveCoverArt.IsEnabled = false;
             ButtonChangeCoverArt.Content = "Add";
         }
@@ -164,96 +192,56 @@ namespace MP3EncoderGUI
             var inputFile = TextBoxInputFile.Text;
             FileInfo outputFileInfo;
 
-            if (inputFile.Length != 0 && File.Exists(inputFile)) {
+            if (inputFile.Length != 0) {
                 try {
-                    outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
+                    using (var stream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                        try {
+                            outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
+                        } catch {
+                            Messages.ShowError(this, Messages.OutputFilePathInvalid);
+                            return;
+                        }
+
+                        // Dispose the previous LAME process if necessary
+                        if (_lameProc != null) { _lameProc.Dispose(); }
+
+                        // Check whether the output file already exists
+                        if (File.Exists(outputFileInfo.FullName)) {
+                            if (Messages.ShowWarning(this, Messages.OutputFileAlreadyExists) == MessageBoxResult.No) {
+                                ButtonStart.Visibility = Visibility.Visible;
+                                GridProgress.Visibility = Visibility.Hidden;
+                                return;
+                            }
+                        } else {
+                            outputFileInfo.Directory.Create();
+                        }
+                        
+                        _lameProc = new Process() {
+                            StartInfo = new ProcessStartInfo() {
+                                FileName = LameEncoderLocation,
+                                Arguments = Helper.GetEncodingParams(this) + " \"" + inputFile + "\" \"" + outputFileInfo.FullName + "\"",
+                                CreateNoWindow = true,
+                                UseShellExecute = false,
+                                RedirectStandardError = true
+                            }
+                        };
+
+                        _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
+                        try {
+                            _lameProc.Start();
+                            _lameProc.BeginErrorReadLine();
+                        } catch {
+                            _lameProc.Dispose();
+                            _lameProc = null;
+                            Messages.ShowError(this, Messages.LameEncoderNotFound);
+                        }
+                    }
                 } catch {
-                    MessageBox.Show("The output file's path is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    ButtonStart.Visibility = Visibility.Visible;
-                    GridProgress.Visibility = Visibility.Hidden;
-                    return;
-                }
-
-                var encParams = DefaultEncodingParams;
-
-                // [ID3] Title
-                if (TextBoxTitle.Text.Length != 0) {
-                    encParams += " --tt \"" + TextBoxTitle.Text + "\"";
-                }
-
-                // [ID3] Artist
-                if (TextBoxArtist.Text.Length != 0) {
-                    encParams += " --ta \"" + TextBoxArtist.Text + "\"";
-                }
-
-                // [ID3] Album
-                if (TextBoxAlbum.Text.Length != 0) {
-                    encParams += " --tl \"" + TextBoxAlbum.Text + "\"";
-                }
-
-                // [ID3] Genre
-                if (ComboBoxGenre.Text.Length != 0) {
-                    byte genreId;
-                    if (MusicGenres.GenreDictionary.TryGetValue(ComboBoxGenre.Text, out genreId)) {
-                        encParams += " --tg " + genreId;
-                    } else {
-                        encParams += " --tg \"" + ComboBoxGenre.Text + "\"";
-                    }
-                }
-
-                // [ID3] Year
-                if (TextBoxYear.Value != null) {
-                    encParams += " --ty " + TextBoxYear.Value;
-                }
-
-                // [ID3] Track
-                if (NumberBoxTrack1.Value != null) {
-                    encParams += " --tn " + NumberBoxTrack1.Value;
-                    if (NumberBoxTrack2.Value != null) {
-                        encParams += "/" + NumberBoxTrack2.Value;
-                    }
-                }
-
-                // [ID3] Comment
-                if (TextBoxComment.Text.Length != 0) {
-                    encParams += " --tc \"" + TextBoxComment.Text + "\"";
-                }
-
-                // [ID3] Cover art
-                if (_coverArtPath != null) {
-                    encParams += " --ti \"" + _coverArtPath + "\"";
-                }
-
-                if (_lameProc != null) { _lameProc.Dispose(); }
-
-                outputFileInfo.Directory.Create();
-                _lameProc = new Process() {
-                    StartInfo = new ProcessStartInfo() {
-                        FileName = AppDomain.CurrentDomain.BaseDirectory + LameLocation,
-                        Arguments = encParams + " \"" + inputFile + "\" \"" + outputFileInfo.FullName + "\"",
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardError = true
-                    }
-                };
-
-                _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
-                try {
-                    _lameProc.Start();
-                    _lameProc.BeginErrorReadLine();
-                } catch {
-                    _lameProc = null;
-                    MessageBox.Show("The LAME encoder was not found at \"" + AppDomain.CurrentDomain.BaseDirectory + LameLocation + "\"." + Environment.NewLine +
-                        "Please download it, and then try again.",
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    ButtonStart.Visibility = Visibility.Visible;
-                    GridProgress.Visibility = Visibility.Hidden;
+                    Messages.ShowError(this, Messages.InputFileNotFound);
                 }
 
             } else {
-                MessageBox.Show("The input file does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                ButtonStart.Visibility = Visibility.Visible;
-                GridProgress.Visibility = Visibility.Hidden;
+                Messages.ShowError(this, Messages.InputFileNotFound);
             }
         }
 
@@ -265,7 +253,7 @@ namespace MP3EncoderGUI
                 var tmp1 = outputText.Substring(0, outputText.IndexOf('(') - 1).Replace(" ", string.Empty);
                 var tmp2 = tmp1.Split('/');
 
-                double value = double.Parse(tmp2[0], InvariantCulture);
+                double value = double.Parse(tmp2[0], Helper.InvariantCulture);
                 _syncContext.Send(_ => ProgressBarEncoding.Value = value, null);
 
                 double maximum;
@@ -304,13 +292,28 @@ namespace MP3EncoderGUI
                 }
 
             } while (
-                MessageBox.Show("Could not delete the unfinished output file at \"" + fileName + "\"." + Environment.NewLine +
-                    "Do you want to retry?",
-                    "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
+                Messages.ShowWarningByDispatcher(this, Messages.OutputFileIsNotRemovable, Messages.DefaultWarningTitle, fileName) == MessageBoxResult.Yes
             );
         }
 
         #endregion
+
+        #endregion
+
+        #region IDisposable support
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing) {
+                DisposeCoverArtStreams();
+            }
+        }
 
         #endregion
     }

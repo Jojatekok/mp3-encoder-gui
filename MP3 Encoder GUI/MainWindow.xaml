@@ -96,6 +96,9 @@
 
                 <TabItem Header="Quality">
                     <TextBlock Text="Coming soon..." VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <!--<Grid Margin="2">
+                        
+                    </Grid>-->
                 </TabItem>
 
                 <TabItem Header="Cover art">
