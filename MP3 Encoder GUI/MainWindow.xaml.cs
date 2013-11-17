@@ -20,7 +20,7 @@ namespace MP3EncoderGUI
 
         public static readonly string LameEncoderLocation = AppDomain.CurrentDomain.BaseDirectory + @"lame\lame.exe";
 
-        private Process _lameProc;
+        private LameProcess _lameProc;
         private SynchronizationContext _syncContext;
 
         public string CoverArtPath { get; private set; }
@@ -43,18 +43,14 @@ namespace MP3EncoderGUI
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            if (_lameProc != null) {
-                if (!_lameProc.HasExited) {
-                    if (Messages.ShowWarning(this, Messages.ExitConfirmationMessage, Messages.ExitConfirmationTitle) == MessageBoxResult.Yes) {
-                        _lameProc.Kill();
-                    } else {
-                        e.Cancel = true;
-                        return;
-                    }
+            if (_lameProc.IsRunning) {
+                if (Messages.ShowWarning(this, Warnings.ExitConfirmation) == MessageBoxResult.No) {
+                    e.Cancel = true;
+                    return;
                 }
-
-                _lameProc.Dispose();
             }
+
+            Dispose();
         }
 
         #endregion
@@ -198,16 +194,13 @@ namespace MP3EncoderGUI
                         try {
                             outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
                         } catch {
-                            Messages.ShowError(this, Messages.OutputFilePathInvalid);
+                            Messages.ShowError(this, Errors.OutputFilePathInvalid);
                             return;
                         }
 
-                        // Dispose the previous LAME process if necessary
-                        if (_lameProc != null) { _lameProc.Dispose(); }
-
                         // Check whether the output file already exists
                         if (File.Exists(outputFileInfo.FullName)) {
-                            if (Messages.ShowWarning(this, Messages.OutputFileAlreadyExists) == MessageBoxResult.No) {
+                            if (Messages.ShowWarning(this, Warnings.OutputFileAlreadyExists) == MessageBoxResult.No) {
                                 ButtonStart.Visibility = Visibility.Visible;
                                 GridProgress.Visibility = Visibility.Hidden;
                                 return;
@@ -215,64 +208,46 @@ namespace MP3EncoderGUI
                         } else {
                             outputFileInfo.Directory.Create();
                         }
-                        
-                        _lameProc = new Process() {
-                            StartInfo = new ProcessStartInfo() {
-                                FileName = LameEncoderLocation,
-                                Arguments = Helper.GetEncodingParams(this) + " \"" + inputFile + "\" \"" + outputFileInfo.FullName + "\"",
-                                CreateNoWindow = true,
-                                UseShellExecute = false,
-                                RedirectStandardError = true
-                            }
-                        };
 
-                        _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
+                        // Dispose the previous LAME process if necessary
+                        if (_lameProc != null) { _lameProc.Dispose(); }
+
+                        _lameProc = new LameProcess(this, inputFile, outputFileInfo.FullName, Helper.GetEncodingParams(this));
+                        _lameProc.ProgressChanged += LameProc_ProgressChanged;
+
                         try {
                             _lameProc.Start();
-                            _lameProc.BeginErrorReadLine();
                         } catch {
                             _lameProc.Dispose();
                             _lameProc = null;
-                            Messages.ShowError(this, Messages.LameEncoderNotFound);
+                            Messages.ShowError(this, Errors.LameEncoderNotFound);
                         }
                     }
                 } catch {
-                    Messages.ShowError(this, Messages.InputFileNotFound);
+                    Messages.ShowError(this, Errors.InputFileNotFound);
                 }
 
             } else {
-                Messages.ShowError(this, Messages.InputFileNotFound);
+                Messages.ShowError(this, Errors.InputFileNotFound);
             }
         }
 
-        private void Lame_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        private void LameProc_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            var outputText = e.Data;
+            _syncContext.Send(_ => {
+                ProgressBarEncoding.Maximum = e.Maximum;
+                ProgressBarEncoding.Value = e.NewValue;
+            }, null);
 
-            if (outputText != null && outputText.Contains("%)")) {
-                var tmp1 = outputText.Substring(0, outputText.IndexOf('(') - 1).Replace(" ", string.Empty);
-                var tmp2 = tmp1.Split('/');
-
-                double value = double.Parse(tmp2[0], Helper.InvariantCulture);
-                _syncContext.Send(_ => ProgressBarEncoding.Value = value, null);
-
-                double maximum;
-                if (double.TryParse(tmp2[1], out maximum)) {
-                    _syncContext.Send(_ => ProgressBarEncoding.Maximum = maximum, null);
-                    if (value == maximum) {
-                        _syncContext.Send(_ => ButtonStop.Content = "Ok", null);
-                    }
-                }
+            if (e.NewValue == e.Maximum) {
+                _syncContext.Send(_ => ButtonStop.Content = "Ok", null);
             }
         }
 
         private void ButtonStop_Click(object sender, RoutedEventArgs e)
         {
-            if (_lameProc != null && !_lameProc.HasExited){
-                _lameProc.Kill();
-
-                var tmp = TextBoxOutputFile.Text;
-                new Thread(() => TryDeleteOutput(tmp)).Start();
+            if (_lameProc.IsRunning) {
+                _lameProc.Cancel();
             }
             
             ButtonStart.Visibility = Visibility.Visible;
@@ -281,20 +256,7 @@ namespace MP3EncoderGUI
             ProgressBarEncoding.Reset();
         }
 
-        private void TryDeleteOutput(string fileName)
-        {
-            do {
-                if (_lameProc == null || _lameProc.HasExited || _lameProc.WaitForExit(3000)) {
-                    try {
-                        File.Delete(fileName);
-                        return;
-                    } catch { }
-                }
-
-            } while (
-                Messages.ShowWarningByDispatcher(this, Messages.OutputFileIsNotRemovable, Messages.DefaultWarningTitle, fileName) == MessageBoxResult.Yes
-            );
-        }
+        
 
         #endregion
 
@@ -312,6 +274,11 @@ namespace MP3EncoderGUI
         {
             if (disposing) {
                 DisposeCoverArtStreams();
+
+                if (_lameProc != null) {
+                    _lameProc.Dispose();
+                    _lameProc = null;
+                }
             }
         }
 

@@ -7,7 +7,7 @@ namespace MP3EncoderGUI
 {
     public static class MusicGenres
     {
-        public static readonly Dictionary<string, byte> GenreDictionary = new Dictionary<string, byte>() {
+        private static readonly Dictionary<string, byte> _genreDictionary = new Dictionary<string, byte>() {
             { "A Cappella", 123 },
             { "Acid", 34 },
             { "Acid Jazz", 74 },
@@ -157,5 +157,8 @@ namespace MP3EncoderGUI
             { "Trip-Hop", 27 },
             { "Vocal", 28 }
         };
+        public static Dictionary<string, byte> GenreDictionary {
+            get { return _genreDictionary; }
+        }
     }
 }

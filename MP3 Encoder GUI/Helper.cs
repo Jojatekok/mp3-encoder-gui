@@ -4,13 +4,19 @@ using System.IO;
 
 namespace MP3EncoderGUI
 {
-    public static class Helper
+    internal static class Helper
     {
-        public static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
+        private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
+        internal static CultureInfo InvariantCulture {
+            get { return _invariantCulture; }
+        }
 
-        private const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
+        private const string _defaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
+        internal static string DefaultEncodingParams {
+            get { return _defaultEncodingParams; }
+        }
 
-        public static string GetEncodingParams(MainWindow window)
+        internal static string GetEncodingParams(MainWindow window)
         {
             var output = DefaultEncodingParams;
 
@@ -65,7 +71,7 @@ namespace MP3EncoderGUI
             return output;
         }
 
-        public static byte[] ReadAllBytes(FileStream stream)
+        internal static byte[] ReadAllBytes(FileStream stream)
         {
             var length = stream.Length;
             if (length > 2147483647L) {
