@@ -1,5 +1,4 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 
 namespace MP3EncoderGUI
@@ -12,7 +11,7 @@ namespace MP3EncoderGUI
         }
 
         private const string _defaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
-        internal static string DefaultEncodingParams {
+        private static string DefaultEncodingParams {
             get { return _defaultEncodingParams; }
         }
 

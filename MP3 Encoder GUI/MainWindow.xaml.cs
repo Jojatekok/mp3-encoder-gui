@@ -1,8 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -14,14 +12,12 @@ namespace MP3EncoderGUI
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window, IDisposable
+    public sealed partial class MainWindow : IDisposable
     {
         #region Declarations
 
-        public static readonly string LameEncoderLocation = AppDomain.CurrentDomain.BaseDirectory + @"lame\lame.exe";
-
+        private readonly SynchronizationContext _syncContext;
         private LameProcess _lameProc;
-        private SynchronizationContext _syncContext;
 
         public string CoverArtPath { get; private set; }
         private FileStream _coverArtFileStream;
@@ -43,7 +39,7 @@ namespace MP3EncoderGUI
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            if (_lameProc.IsRunning) {
+            if (_lameProc != null && _lameProc.IsRunning) {
                 if (Messages.ShowWarning(this, Warnings.ExitConfirmation) == MessageBoxResult.No) {
                     e.Cancel = true;
                     return;
@@ -59,7 +55,7 @@ namespace MP3EncoderGUI
 
         private void ButtonInput_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog() {
+            var dlg = new OpenFileDialog {
                 Filter = "All files|*|Waveform Audio File (*.wav, *.wave)|*.wav;*.wave"
             };
             
@@ -70,7 +66,7 @@ namespace MP3EncoderGUI
 
         private void ButtonOutput_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new SaveFileDialog() {
+            var dlg = new SaveFileDialog {
                 Filter = "All files|*|MP3 File (*.mp3)|*.mp3",
                 FilterIndex = 2,
                 OverwritePrompt = false
@@ -112,9 +108,9 @@ namespace MP3EncoderGUI
 
         #region Encoding options
 
-        private void NumberBoxTrack1_ValueChanged(object sender, RoutedEventArgs e)
+        private void NumberBoxTrack1_ValueChanged(object sender, WpfCustomControls.ValueChangedEventArgs e)
         {
-            if (NumberBoxTrack1.Value != null) {
+            if (e.NewValue != null) {
                 NumberBoxTrack2.IsEnabled = true;
 
             } else {
@@ -125,30 +121,31 @@ namespace MP3EncoderGUI
 
         private void ButtonChangeCoverArt_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "All files|*|Recommended image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|JPEG files (*.jpg, *.jpeg, *.jpe)|*.jpg;*.jpeg;*.jpe|PNG files (*.png)|*.png|GIF files (*.gif)|*.gif";
-            dlg.FilterIndex = 2;
+            var dlg = new OpenFileDialog {
+                Filter = "All files|*|Recommended image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|JPEG files (*.jpg, *.jpeg, *.jpe)|*.jpg;*.jpeg;*.jpe|PNG files (*.png)|*.png|GIF files (*.gif)|*.gif",
+                FilterIndex = 2
+            };
 
-            if (dlg.ShowDialog() == true) {
-                try {
-                    // Dispose the previous cover art streams if necessary
-                    DisposeCoverArtStreams();
-                    
-                    _coverArtFileStream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096);
-                    _coverArtMemStream = new MemoryStream(Helper.ReadAllBytes(_coverArtFileStream));
-                    
-                    var image = new BitmapImage();
-                    image.BeginInit();
-                    image.StreamSource = _coverArtMemStream;
-                    image.EndInit();
+            if (dlg.ShowDialog() != true) return;
 
-                    ImageCoverArt.Source = image;
-
-                    CoverArtPath = dlg.FileName;
-                    ButtonChangeCoverArt.Content = "Change";
-                    ButtonRemoveCoverArt.IsEnabled = true;
-                } catch { }
-            }
+            try {
+                // Dispose the previous cover art streams if necessary
+                DisposeCoverArtStreams();
+                
+                _coverArtFileStream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096);
+                _coverArtMemStream = new MemoryStream(Helper.ReadAllBytes(_coverArtFileStream));
+                
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.StreamSource = _coverArtMemStream;
+                image.EndInit();
+                
+                ImageCoverArt.Source = image;
+                
+                CoverArtPath = dlg.FileName;
+                ButtonChangeCoverArt.Content = "Change";
+                ButtonRemoveCoverArt.IsEnabled = true;
+            } catch { }
         }
 
         private void DisposeCoverArtStreams()
@@ -186,11 +183,11 @@ namespace MP3EncoderGUI
             ButtonStart.Visibility = Visibility.Hidden;
 
             var inputFile = TextBoxInputFile.Text;
-            FileInfo outputFileInfo;
 
             if (inputFile.Length != 0) {
                 try {
-                    using (var stream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    using (new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                        FileInfo outputFileInfo;
                         try {
                             outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
                         } catch {
@@ -270,7 +267,7 @@ namespace MP3EncoderGUI
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing) {
                 DisposeCoverArtStreams();

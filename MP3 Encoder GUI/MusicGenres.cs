@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace MP3EncoderGUI
 {
     public static class MusicGenres
     {
-        private static readonly Dictionary<string, byte> _genreDictionary = new Dictionary<string, byte>() {
+        private static readonly Dictionary<string, byte> _genreDictionary = new Dictionary<string, byte> {
             { "A Cappella", 123 },
             { "Acid", 34 },
             { "Acid Jazz", 74 },

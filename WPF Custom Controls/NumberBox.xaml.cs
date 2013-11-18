@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,8 +9,14 @@ namespace WpfCustomControls
     /// <summary>
     /// Interaction logic for NumberBox.xaml
     /// </summary>
-    public partial class NumberBox
+    public sealed partial class NumberBox
     {
+        #region Events
+
+        public event EventHandler<ValueChangedEventArgs> ValueChanged;
+
+        #endregion
+
         #region Declarations
 
         private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
@@ -41,7 +48,8 @@ namespace WpfCustomControls
                 if (value != null && TextBoxNumber.Text != value.ToString()) {
                     OverwriteValue(value.Value, true);
                 }
-                RaiseEvent(_valueChangedEventArgs);
+
+                OnValueChanged(new ValueChangedEventArgs(value));
             }
         }
 
@@ -71,27 +79,13 @@ namespace WpfCustomControls
 
         #endregion
 
-        #region Events
-
-        public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent(
-            "ValueChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(NumberBox));
-
-        public event RoutedEventHandler ValueChanged {
-            add { AddHandler(ValueChangedEvent, value); }
-            remove { RemoveHandler(ValueChangedEvent, value); }
-        }
-
-        private static readonly RoutedEventArgs _valueChangedEventArgs = new RoutedEventArgs(ValueChangedEvent);
-
-        #endregion
-
         #region Methods
 
         public NumberBox()
         {
             InitializeComponent();
 
-            DataObject.AddPastingHandler(TextBoxNumber, new DataObjectPastingEventHandler(TextBoxNumber_OnPaste));
+            DataObject.AddPastingHandler(TextBoxNumber, TextBoxNumber_OnPaste);
         }
 
         public void Clear()
@@ -108,7 +102,7 @@ namespace WpfCustomControls
 
         private void TextBoxNumber_OnPaste(object sender, DataObjectPastingEventArgs e)
         {
-            if (e.SourceDataObject.GetDataPresent(System.Windows.DataFormats.Text)) {
+            if (e.SourceDataObject.GetDataPresent(DataFormats.Text)) {
                 if (IsInputValid(e.SourceDataObject.GetData(DataFormats.Text) as string)) {
                     return;
                 }
@@ -137,6 +131,12 @@ namespace WpfCustomControls
                     Value = null;
                 }
             }
+        }
+
+        private void OnValueChanged(ValueChangedEventArgs e)
+        {
+            if (ValueChanged != null)
+                ValueChanged(this, e);
         }
 
         private bool IsInputValid(string input)
@@ -172,5 +172,15 @@ namespace WpfCustomControls
         }
 
         #endregion
+    }
+
+    public class ValueChangedEventArgs : EventArgs
+    {
+        public uint? NewValue { get; private set; }
+
+        public ValueChangedEventArgs(uint? newValue)
+        {
+            NewValue = newValue;
+        }
     }
 }

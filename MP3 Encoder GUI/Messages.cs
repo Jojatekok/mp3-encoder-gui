@@ -19,7 +19,7 @@ namespace MP3EncoderGUI
 
         internal static void ShowError(Window window, string errorMessage, params string[] arguments)
         {
-            ShowError(window, new string[] { Errors.DefaultTitle, errorMessage }, arguments);
+            ShowError(window, new[] { Errors.DefaultTitle, errorMessage }, arguments);
         }
 
         internal static MessageBoxResult ShowWarning(Window window, IList<string> warning, params string[] arguments)
@@ -29,7 +29,7 @@ namespace MP3EncoderGUI
 
         internal static MessageBoxResult ShowWarning(Window window, string warningMessage, params string[] arguments)
         {
-            return ShowWarning(window, new string[] { Errors.DefaultTitle, warningMessage }, arguments);
+            return ShowWarning(window, new[] { Errors.DefaultTitle, warningMessage }, arguments);
         }
 
         internal static MessageBoxResult ShowWarningByDispatcher(Window window, IList<string> warning, params string[] arguments)
@@ -41,7 +41,7 @@ namespace MP3EncoderGUI
 
         internal static MessageBoxResult ShowWarningByDispatcher(Window window, string warningMessage, params string[] arguments)
         {
-            return ShowWarningByDispatcher(window, new string[] { Warnings.DefaultTitle, warningMessage }, arguments);
+            return ShowWarningByDispatcher(window, new[] { Warnings.DefaultTitle, warningMessage }, arguments);
         }
 
         private static string AddArguments(string message, string[] arguments)
@@ -87,7 +87,7 @@ namespace MP3EncoderGUI
             get { return _defaultTitle; }
         }
 
-        private static readonly IList<string> _exitConfirmation = new string[] {
+        private static readonly IList<string> _exitConfirmation = new[] {
             "The encoding is still in progress",
             "Are you sure you want to exit?"
         };
