@@ -77,6 +77,20 @@ namespace WpfCustomControls
             }
         }
 
+        private bool _isReadOnly;
+        public bool IsReadOnly
+        {
+            get { return _isReadOnly; }
+
+            set
+            {
+                if (value == _isReadOnly) { return; }
+
+                TextBoxNumber.IsReadOnly = value;
+                _isReadOnly = value;
+            }
+        }
+
         #endregion
 
         #region Methods

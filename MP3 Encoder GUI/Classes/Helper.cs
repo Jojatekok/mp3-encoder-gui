@@ -1,19 +1,32 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Media;
 
 namespace MP3EncoderGUI
 {
     internal static class Helper
     {
+        #region Declarations
+
+        private const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
+
+        private static readonly string _appStartDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        internal static string AppStartDirectory {
+            get { return _appStartDirectory; }
+        }
+
         private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         internal static CultureInfo InvariantCulture {
             get { return _invariantCulture; }
         }
 
-        private const string _defaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
-        private static string DefaultEncodingParams {
-            get { return _defaultEncodingParams; }
-        }
+        #endregion
+
+        #region Methods
 
         internal static string GetEncodingParams(MainWindow window)
         {
@@ -45,8 +58,8 @@ namespace MP3EncoderGUI
             }
 
             // [ID3] Year
-            if (window.TextBoxYear.Value != null) {
-                output += " --ty " + window.TextBoxYear.Value;
+            if (window.NumericUpDownYear.Value != null) {
+                output += " --ty " + window.NumericUpDownYear.Value;
             }
 
             // [ID3] Track
@@ -92,5 +105,29 @@ namespace MP3EncoderGUI
 
             return output;
         }
+
+        internal static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            for (var i = VisualTreeHelper.GetChildrenCount(depObj) - 1; i >= 0; i--) {
+                var child = VisualTreeHelper.GetChild(depObj, i);
+                
+                if (child is T) {
+                    yield return child as T;
+                }
+
+                foreach (var childOfChild in FindVisualChildren<T>(child)) {
+                    yield return childOfChild;
+                }
+            }
+        }
+
+        #endregion
+    }
+
+    internal static class NativeMethods
+    {
+        [DllImport("wininet.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal extern static bool InternetGetConnectedState(out int description, int reservedValue);
     }
 }

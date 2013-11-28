@@ -3,6 +3,7 @@
 
 # Visual Studio
 *.sln     merge=union text eol=crlf
+*.config  merge=union text eol=lf
 
 # C#
 *.cs      merge=union diff=csharp text eol=lf

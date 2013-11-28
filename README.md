@@ -8,14 +8,14 @@ The program is written in [C#][] and [XAML][] ([WPF][]), and uses the command li
 [LAME MP3 Encoder]: http://lame.sourceforge.net/
 
 ## Usage requirements
-Installing [Microsoft .NET Framework 4][] (or higher) is a requirement for both end-users and developers.
+Installing [Microsoft .NET Framework 4.5][] (or higher) is a requirement for both end-users and developers.
 
 To avoid legal problems, the LAME Encoder's assemblies are not included in the project.
 Please obtain (compile or download) _lame.exe,_ and put it into the output directory's _"lame"_ folder.
 
 _The application is tested to work flawlessly with LAME v3.99.5._
 
-[Microsoft .NET Framework 4]: http://www.microsoft.com/download/details.aspx?id=17851
+[Microsoft .NET Framework 4.5]: http://www.microsoft.com/download/details.aspx?id=30653
 
 ## About versioning
     <Major>.<Minor>.<Build>.<Revision>

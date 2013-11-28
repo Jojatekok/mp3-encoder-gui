@@ -26,6 +26,17 @@ namespace WpfCustomControls
             set { NumberBox1.Maximum = value; }
         }
 
+        public bool IsReadOnly
+        {
+            get { return NumberBox1.IsReadOnly; }
+
+            set {
+                RepeatButtonUp.IsEnabled = !value;
+                RepeatButtonDown.IsEnabled = !value;
+                NumberBox1.IsReadOnly = value;
+            }
+        }
+
         #endregion
 
         #region Methods

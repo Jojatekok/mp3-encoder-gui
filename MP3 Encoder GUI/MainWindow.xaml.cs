@@ -1,7 +1,11 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +27,31 @@ namespace MP3EncoderGUI
         private FileStream _coverArtFileStream;
         private MemoryStream _coverArtMemStream;
 
+        private bool _isCheckingForUpdates;
+        private bool IsCheckingForUpdates
+        {
+            get { return _isCheckingForUpdates; }
+
+            set {
+                if (value == IsCheckingForUpdates) return;
+
+                if (value) {
+                    ProgressBarEncoding.IsMarquee = true;
+                    ProgressBarEncoding.Text = "Checking for updates...";
+                    GridProgress.Visibility = Visibility.Visible;
+                    ButtonStart.Visibility = Visibility.Hidden;
+
+                } else {
+                    ButtonStart.Visibility = Visibility.Visible;
+                    GridProgress.Visibility = Visibility.Hidden;
+                    ProgressBarEncoding.IsMarquee = false;
+                    ProgressBarEncoding.Text = "Encoding...";
+                }
+
+                _isCheckingForUpdates = value;
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -35,18 +64,99 @@ namespace MP3EncoderGUI
             _syncContext = SynchronizationContext.Current;
 
             ComboBoxGenre.ItemsSource = MusicGenres.GenreDictionary.Keys;
+
+#if DEBUG
+            // Do not check for updates
+            ProgressBarEncoding.Text = "Encoding...";
+#else
+            if (IsConnectedToInternet()) {
+                CheckForUpdates();
+            } else {
+                ProgressBarEncoding.Text = "Encoding...";
+            }
+#endif
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             if (_lameProc != null && _lameProc.IsRunning) {
-                if (Messages.ShowWarning(this, Warnings.ExitConfirmation) == MessageBoxResult.No) {
+                if (Messages.ShowWarning(this, Messages.Warnings.ExitConfirmation) == MessageBoxResult.No) {
                     e.Cancel = true;
                     return;
                 }
             }
 
             Dispose();
+        }
+
+        #endregion
+
+        #region Check for updates
+
+        private static bool IsConnectedToInternet()
+        {
+            int tmp;
+            return NativeMethods.InternetGetConnectedState(out tmp, 0);
+        }
+
+        private async void CheckForUpdates()
+        {
+            IsCheckingForUpdates = true;
+
+            using (var webClient = new WebClient()) {
+                try {
+                    var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                    var latestVersionString = await webClient.DownloadStringTaskAsync(new Uri("http://jojatekok.github.io/mp3-encoder-gui/version.txt"));
+
+                    if (new Version(latestVersionString).CompareTo(currentVersion) > 0) {
+                        var updateName = "Update (v" + latestVersionString + ")";
+                        var updatePath = Helper.AppStartDirectory + updateName;
+
+                        // Start downloading the update and notify the user about it
+                        using (var downloadTask = webClient.DownloadFileTaskAsync(new Uri("http://jojatekok.github.io/mp3-encoder-gui/latest.zip"), updatePath + ".zip")) {
+                            if (IsCheckingForUpdates && Messages.ShowQuestion(this, Messages.Questions.UpdateAvailable, latestVersionString) == MessageBoxResult.Yes) {
+                                ButtonStop.IsEnabled = false;
+                                ProgressBarEncoding.Text = "Applying update...";
+
+                            } else {
+                                IsCheckingForUpdates = false;
+                                try {
+                                    File.Delete(updatePath + ".zip");
+                                } catch { }
+                                return;
+                            }
+
+                            await downloadTask;
+                        }
+
+                        // Extract the downloaded update
+                        ZipFile.ExtractToDirectory(updatePath + ".zip", updatePath);
+
+                        // Write a batch file which applies the update
+                        using (var writer = new StreamWriter(Helper.AppStartDirectory + "Updater.bat")) {
+                            await writer.WriteAsync("XCOPY /V /Q /R /Y \"" + updateName + "\"" + Environment.NewLine +
+                                                    "START \"\" \"MP3 Encoder GUI.exe\"" + Environment.NewLine +
+                                                    "RD /S /Q \"" + updateName + "\"" + Environment.NewLine +
+                                                    "DEL /F /Q \"" + updateName + ".zip\"" + Environment.NewLine +
+                                                    "DEL /F /Q %0");
+                        }
+
+                        new Process {
+                            StartInfo = new ProcessStartInfo(Helper.AppStartDirectory + "Updater.bat") {
+                                CreateNoWindow = true,
+                                UseShellExecute = false
+                            }
+                        }.Start();
+
+                        Application.Current.Shutdown();
+                    }
+
+                } catch {
+                    Messages.ShowError(this, Messages.Errors.UpdateCheckFailed);
+                }
+            }
+
+            IsCheckingForUpdates = false;
         }
 
         #endregion
@@ -98,9 +208,14 @@ namespace MP3EncoderGUI
             var tmp = TextBoxInputFile.Text.LastIndexOf('.');
 
             if (tmp == -1) {
+                // No input file extension
                 TextBoxOutputFile.Text = TextBoxInputFile.Text + ".mp3";
-            } else {
+            } else if (TextBoxInputFile.Text.Substring(tmp) != ".mp3") {
+                // The input file's extension is not MP3
                 TextBoxOutputFile.Text = TextBoxInputFile.Text.Substring(0, tmp) + ".mp3";
+            } else {
+                // The input file's extension is MP3
+                TextBoxOutputFile.Text = TextBoxInputFile.Text.Substring(0, tmp) + " (Re-encoded).mp3";
             }
         }
 
@@ -148,6 +263,15 @@ namespace MP3EncoderGUI
             } catch { }
         }
 
+        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
+        {
+            // Dispose the previous cover art streams if necessary
+            DisposeCoverArtStreams();
+
+            ButtonRemoveCoverArt.IsEnabled = false;
+            ButtonChangeCoverArt.Content = "Add";
+        }
+
         private void DisposeCoverArtStreams()
         {
             ImageCoverArt.Source = null;
@@ -164,68 +288,122 @@ namespace MP3EncoderGUI
             }
         }
 
-        private void ButtonRemoveCoverArt_Click(object sender, RoutedEventArgs e)
-        {
-            // Dispose the previous cover art streams if necessary
-            DisposeCoverArtStreams();
-
-            ButtonRemoveCoverArt.IsEnabled = false;
-            ButtonChangeCoverArt.Content = "Add";
-        }
-
         #endregion
 
         #region Start/stop encoding
 
         private void ButtonStart_Click(object sender, RoutedEventArgs e)
         {
-            GridProgress.Visibility = Visibility.Visible;
-            ButtonStart.Visibility = Visibility.Hidden;
+            LockOptionControls(true);
 
             var inputFile = TextBoxInputFile.Text;
 
-            if (inputFile.Length != 0) {
-                try {
-                    using (new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                        FileInfo outputFileInfo;
-                        try {
-                            outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
-                        } catch {
-                            Messages.ShowError(this, Errors.OutputFilePathInvalid);
+            if (inputFile.Length == 0 || !File.Exists(inputFile)) {
+                Messages.ShowError(this, Messages.Errors.InputFileNotFound);
+                return;
+            }
+
+            // Lock the found input file (so it cannot be modified or removed)
+            using (new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read, 1)) {
+                if (!File.Exists(LameProcess.LamePath)) {
+                    Messages.ShowError(this, Messages.Errors.LameEncoderNotFound);
+                    return;
+                }
+
+                // Lock the found LAME encoder (so it cannot be modified or removed)
+                using (new FileStream(LameProcess.LamePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1)) {
+                    FileInfo outputFileInfo;
+                    try {
+                        outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
+                    } catch {
+                        Messages.ShowError(this, Messages.Errors.OutputFilePathInvalid);
+                        return;
+                    }
+
+                    // Check whether the output file already exists
+                    if (File.Exists(outputFileInfo.FullName)) {
+                        if (Messages.ShowWarning(this, Messages.Warnings.OutputFileAlreadyExists) == MessageBoxResult.No) {
+                            ButtonStart.Visibility = Visibility.Visible;
+                            GridProgress.Visibility = Visibility.Hidden;
                             return;
                         }
-
-                        // Check whether the output file already exists
-                        if (File.Exists(outputFileInfo.FullName)) {
-                            if (Messages.ShowWarning(this, Warnings.OutputFileAlreadyExists) == MessageBoxResult.No) {
-                                ButtonStart.Visibility = Visibility.Visible;
-                                GridProgress.Visibility = Visibility.Hidden;
-                                return;
-                            }
-                        } else {
-                            outputFileInfo.Directory.Create();
-                        }
-
-                        // Dispose the previous LAME process if necessary
-                        if (_lameProc != null) { _lameProc.Dispose(); }
-
-                        _lameProc = new LameProcess(this, inputFile, outputFileInfo.FullName, Helper.GetEncodingParams(this));
-                        _lameProc.ProgressChanged += LameProc_ProgressChanged;
-
-                        try {
-                            _lameProc.Start();
-                        } catch {
-                            _lameProc.Dispose();
-                            _lameProc = null;
-                            Messages.ShowError(this, Errors.LameEncoderNotFound);
-                        }
+                    } else {
+                        outputFileInfo.Directory.Create();
                     }
-                } catch {
-                    Messages.ShowError(this, Errors.InputFileNotFound);
+
+                    // Dispose the previous LAME process if necessary
+                    if (_lameProc != null) { _lameProc.Dispose(); }
+
+                    _lameProc = new LameProcess(this, inputFile, outputFileInfo.FullName, Helper.GetEncodingParams(this));
+                    _lameProc.ProgressChanged += LameProc_ProgressChanged;
+                    _lameProc.Disposed += LameProc_Disposed;
+                    _lameProc.Start();
+                }
+            }
+        }
+
+        private void ButtonStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsCheckingForUpdates) {
+                // Cancel checking for updates
+                IsCheckingForUpdates = false;
+                return;
+            }
+
+            // Else, cancel encoding
+            if (_lameProc.IsRunning) {
+                _lameProc.Cancel();
+            }
+
+            LockOptionControls(false);
+            
+            ButtonStop.Content = "Cancel";
+            ProgressBarEncoding.Reset();
+        }
+
+        public void LockOptionControls(bool doLock)
+        {
+            if (doLock) {
+                GridProgress.Visibility = Visibility.Visible;
+                ButtonStart.Visibility = Visibility.Hidden;
+
+                ButtonChangeCoverArt.IsEnabled = false;
+                ButtonRemoveCoverArt.IsEnabled = false;
+
+                if (ComboBoxGenre.SelectedValue != null) {
+                    var tmp = ComboBoxGenre.SelectedValue;
+                    ComboBoxGenre.ItemsSource = null;
+                    ComboBoxGenre.SelectedValue = tmp;
+                    ComboBoxGenre.Text = tmp as string;
+
+                } else {
+                    var tmp = ComboBoxGenre.Text;
+                    ComboBoxGenre.ItemsSource = null;
+                    ComboBoxGenre.Text = tmp;
                 }
 
             } else {
-                Messages.ShowError(this, Errors.InputFileNotFound);
+                ButtonStart.Visibility = Visibility.Visible;
+                GridProgress.Visibility = Visibility.Hidden;
+
+                ComboBoxGenre.ItemsSource = MusicGenres.GenreDictionary.Keys;
+
+                ButtonChangeCoverArt.IsEnabled = true;
+                if (ImageCoverArt.Source != null) {
+                    ButtonRemoveCoverArt.IsEnabled = true;
+                }
+            }
+
+            ComboBoxGenre.IsReadOnly = doLock;
+            NumericUpDownYear.IsReadOnly = doLock;
+            NumberBoxTrack1.IsReadOnly = doLock;
+            NumberBoxTrack2.IsReadOnly = doLock;
+
+            TextBoxInputFile.IsReadOnly = doLock;
+            TextBoxOutputFile.IsReadOnly = doLock;
+
+            foreach (var textBox in Helper.FindVisualChildren<TextBox>(TabControlEncodingOptions)) {
+                textBox.IsReadOnly = doLock;
             }
         }
 
@@ -241,19 +419,10 @@ namespace MP3EncoderGUI
             }
         }
 
-        private void ButtonStop_Click(object sender, RoutedEventArgs e)
+        private void LameProc_Disposed(object sender, EventArgs e)
         {
-            if (_lameProc.IsRunning) {
-                _lameProc.Cancel();
-            }
-            
-            ButtonStart.Visibility = Visibility.Visible;
-            GridProgress.Visibility = Visibility.Hidden;
-            ButtonStop.Content = "Cancel";
-            ProgressBarEncoding.Reset();
+            _lameProc = null;
         }
-
-        
 
         #endregion
 
@@ -264,7 +433,6 @@ namespace MP3EncoderGUI
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
@@ -274,7 +442,6 @@ namespace MP3EncoderGUI
 
                 if (_lameProc != null) {
                     _lameProc.Dispose();
-                    _lameProc = null;
                 }
             }
         }

@@ -11,12 +11,16 @@ namespace MP3EncoderGUI
         #region Events
 
         public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
+        public event EventHandler Disposed;
 
         #endregion
 
         #region Declarations
 
-        public static readonly string LameLocation = AppDomain.CurrentDomain.BaseDirectory + @"lame\lame.exe";
+        private static readonly string _lamePath = Helper.AppStartDirectory + @"lame\lame.exe";
+        public static string LamePath {
+            get { return _lamePath; }
+        }
 
         public bool IsRunning {
             get { return !IsDisposed && !_lameProc.HasExited; }
@@ -27,7 +31,7 @@ namespace MP3EncoderGUI
         private string OutputFile { get; set; }
 
         private readonly Window _parentWindow;
-        private Process _lameProc;
+        private readonly Process _lameProc;
 
         #endregion
 
@@ -37,10 +41,10 @@ namespace MP3EncoderGUI
         {
             _parentWindow = parentWindow;
             OutputFile = outputFile;
-
+            
             _lameProc = new Process {
                 StartInfo = new ProcessStartInfo {
-                    FileName = LameLocation,
+                    FileName = LamePath,
                     Arguments = arguments + " \"" + inputFile + "\" \"" + outputFile + "\"",
                     CreateNoWindow = true,
                     UseShellExecute = false,
@@ -51,14 +55,21 @@ namespace MP3EncoderGUI
 
         public void Start()
         {
-            _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
-            _lameProc.Start();
-            _lameProc.BeginErrorReadLine();
+            try {
+                _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
+                _lameProc.Start();
+                _lameProc.BeginErrorReadLine();
+            } catch {
+                IsDisposed = true;
+                _lameProc.Dispose();
+                throw new FileNotFoundException(Messages.Errors.LameEncoderNotFound, LamePath);
+            }
         }
 
         public void Cancel()
         {
             _lameProc.Kill();
+            ProgressChanged = null;
             new Thread(TryDeleteOutput).Start();
         }
 
@@ -67,21 +78,14 @@ namespace MP3EncoderGUI
             var outputText = e.Data;
 
             if (outputText != null && outputText.Contains("%)")) {
-                var tmp1 = outputText.Substring(0, outputText.IndexOf('(') - 1).Replace(" ", string.Empty);
-                var tmp2 = tmp1.Split('/');
-                
-                double maximum;
-                if (double.TryParse(tmp2[1], out maximum)) {
-                    var value = double.Parse(tmp2[0], Helper.InvariantCulture);
+                var tmp = outputText.Substring(0, outputText.IndexOf('(') - 1).Replace(" ", string.Empty).Split('/');
+
+                uint maximum;
+                if (uint.TryParse(tmp[1], out maximum)) {
+                    var value = uint.Parse(tmp[0], Helper.InvariantCulture);
                     OnProgressChanged(new ProgressChangedEventArgs(value, maximum));
                 }
             }
-        }
-
-        private void OnProgressChanged(ProgressChangedEventArgs e)
-        {
-            if (ProgressChanged != null)
-                ProgressChanged(this, e);
         }
 
         private bool DeleteOutput()
@@ -99,10 +103,25 @@ namespace MP3EncoderGUI
         private void TryDeleteOutput()
         {
             do {
-                if (DeleteOutput()) { return; }
+                if (DeleteOutput()) {
+                    Dispose();
+                    return;
+                }
             } while (
-                Messages.ShowWarningByDispatcher(_parentWindow, Warnings.OutputFileIsNotRemovable, OutputFile) == MessageBoxResult.Yes
+                Messages.ShowWarningByDispatcher(_parentWindow, Messages.Warnings.OutputFileIsNotRemovable, OutputFile) == MessageBoxResult.Yes
             );
+        }
+
+        private void OnProgressChanged(ProgressChangedEventArgs e)
+        {
+            if (ProgressChanged != null)
+                ProgressChanged(this, e);
+        }
+
+        private void OnDisposed()
+        {
+            if (Disposed != null)
+                Disposed(this, null);
         }
 
         #endregion
@@ -112,37 +131,31 @@ namespace MP3EncoderGUI
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
         {
             if (disposing && !IsDisposed) {
-                if (_lameProc != null) {
-                    if (!_lameProc.HasExited) {
-                        _lameProc.Kill();
-                        DeleteOutput();
-                    }
-
-                    IsDisposed = true;
-                    _lameProc.Dispose();
-                    _lameProc = null;
-                    return;
+                if (!_lameProc.HasExited) {
+                    _lameProc.Kill();
+                    DeleteOutput();
                 }
 
                 IsDisposed = true;
+                _lameProc.Dispose();
+                OnDisposed();
             }
         }
 
         #endregion
     }
 
-    public class ProgressChangedEventArgs : EventArgs
+    public sealed class ProgressChangedEventArgs : EventArgs
     {
-        public double NewValue { get; private set; }
-        public double Maximum { get; private set; }
+        public uint NewValue { get; private set; }
+        public uint Maximum { get; private set; }
 
-        public ProgressChangedEventArgs(double newValue, double maximum)
+        public ProgressChangedEventArgs(uint newValue, uint maximum)
         {
             NewValue = newValue;
             Maximum = maximum;

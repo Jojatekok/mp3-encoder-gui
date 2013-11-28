@@ -31,18 +31,18 @@
 
                 <!-- Input file -->
                 <TextBlock Text="Input:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0"/>
-                <TextBox x:Name="TextBoxInputFile" Grid.Column="1" TextChanged="TextBoxInputFile_TextChanged" Margin="8,3,0,3"/>
-                <Button Grid.Column="2" Content="..." Click="ButtonInput_Click" Margin="5,3,0,3"/>
+                <TextBox x:Name="TextBoxInputFile" Grid.Row="0" Grid.Column="1" TextChanged="TextBoxInputFile_TextChanged" Margin="8,3,0,3"/>
+                <Button Grid.Row="0" Grid.Column="2" Content="..." Click="ButtonInput_Click" Margin="5,3,0,3"/>
 
                 <!-- Output file -->
-                <TextBlock Grid.Row="1" Text="Output:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Output:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0"/>
                 <TextBox x:Name="TextBoxOutputFile" Grid.Row="1" Grid.Column="1" LostFocus="TextBoxOutputFile_LostFocus" Margin="8,3,0,3"/>
                 <Button Grid.Row="1" Grid.Column="2" Content="..." Click="ButtonOutput_Click" Margin="5,3,0,3"/>
             </Grid>
         </GroupBox>
 
         <GroupBox Grid.Row="1" Header="Encoding options" Margin="10,5">
-            <TabControl Margin="2,5">
+            <TabControl x:Name="TabControlEncodingOptions" Margin="2,5">
                 <TabItem Header="General">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <Grid Margin="2">
@@ -61,19 +61,19 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Text="Title:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
-                            <TextBox x:Name="TextBoxTitle" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"/>
+                            <TextBox x:Name="TextBoxTitle" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"/>
 
-                            <TextBlock Grid.Row="1" Text="Artist:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Artist:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
                             <TextBox x:Name="TextBoxArtist" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"/>
 
-                            <TextBlock Grid.Row="2" Text="Album:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Album:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
                             <TextBox x:Name="TextBoxAlbum" Grid.Row="2" Grid.Column="1" Margin="3"/>
 
-                            <TextBlock Grid.Row="3" Text="Genre:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Genre:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="3,0,5,0"/>
                             <ComboBox x:Name="ComboBoxGenre" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="3"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="2" Text="Year:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,5,0"/>
-                            <customControls:NumericUpDown x:Name="TextBoxYear" Grid.Row="2" Grid.Column="3" Minimum="1" Maximum="9999" Height="22" Margin="3"/>
+                            <customControls:NumericUpDown x:Name="NumericUpDownYear" Grid.Row="2" Grid.Column="3" Minimum="1" Maximum="9999" Height="22" Margin="3"/>
 
                             <TextBlock Grid.Row="3" Grid.Column="2" Text="Track:" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="10,0,5,0"/>
                             <Grid Grid.Row="3" Grid.Column="3">
@@ -88,7 +88,7 @@
                                 <customControls:NumberBox x:Name="NumberBoxTrack2" Grid.Column="2" Minimum="1" Maximum="255" IsEnabled="False" Margin="3"/>
                             </Grid>
 
-                            <TextBlock Grid.Row="4" Text="Comment:" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="3,6,5,5"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Comment:" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="3,6,5,5"/>
                             <TextBox x:Name="TextBoxComment" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"/>
                         </Grid>
                     </ScrollViewer>
@@ -117,7 +117,6 @@
                         <Border Grid.ColumnSpan="4" BorderThickness="1" BorderBrush="#40000000" Margin="0,0,0,8">
                             <Image x:Name="ImageCoverArt" Stretch="Uniform"/>
                         </Border>
-                        
 
                         <Button x:Name="ButtonChangeCoverArt" Grid.Row="1" Grid.Column="1" Content="Add" Click="ButtonChangeCoverArt_Click" Margin="0,0,3,0"/>
                         <Button x:Name="ButtonRemoveCoverArt" Grid.Row="1" Grid.Column="2" Content="Remove" IsEnabled="False" Click="ButtonRemoveCoverArt_Click" Margin="3,0,0,0"/>
@@ -132,8 +131,8 @@
                 <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
 
-            <customControls:ProgressBarWithText x:Name="ProgressBarEncoding" Text="Encoding..."/>
-            <Button x:Name="ButtonStop" Grid.Column="2" Content="Cancel" Height="30" Click="ButtonStop_Click" Margin="5,0,0,0"/>
+            <customControls:ProgressBarWithText x:Name="ProgressBarEncoding"/>
+            <Button x:Name="ButtonStop" Grid.Column="1" Content="Cancel" Height="30" Click="ButtonStop_Click" Margin="5,0,0,0"/>
         </Grid>
 
         <Button x:Name="ButtonStart" Grid.Row="2" Content="Start encoding" Height="30" Click="ButtonStart_Click" Margin="10,5,10,10"/>

@@ -22,9 +22,8 @@ namespace WpfCustomControls
             }
         }
 
-        private double _value;
-        public double Value
-        {
+        private uint _value;
+        public uint Value {
             get { return _value; }
 
             set {
@@ -43,8 +42,8 @@ namespace WpfCustomControls
             }
         }
 
-        private double _minimum;
-        public double Minimum {
+        private uint _minimum;
+        public uint Minimum {
             get { return _minimum; }
 
             set {
@@ -61,8 +60,8 @@ namespace WpfCustomControls
             }
         }
 
-        private double _maximum = uint.MaxValue;
-        public double Maximum {
+        private uint _maximum = uint.MaxValue;
+        public uint Maximum {
             get { return _maximum; }
 
             set {
@@ -79,6 +78,16 @@ namespace WpfCustomControls
             }
         }
 
+        public bool IsMarquee {
+            get { return ProgressBar1.IsIndeterminate; }
+            set {
+                if (value == IsMarquee) return;
+
+                ProgressBar1.IsIndeterminate = value;
+                RefreshText();
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -90,17 +99,18 @@ namespace WpfCustomControls
         }
 
         public void Reset() {
-            _minimum = 0D;
-            Value = 0D;
-            RefreshText();
+            _minimum = 0U;
+            Value = 0U;
         }
 
         private void RefreshText()
         {
             if (Value == Maximum) {
                 TextBlock1.Text = "Done!";
+            } else if (IsMarquee) {
+                TextBlock1.Text = Text;
             } else {
-                TextBlock1.Text = Text + " (" + Math.Floor(Value / Maximum * 100) + "%)";
+                TextBlock1.Text = Text + " (" + Math.Floor((double)Value / Maximum * 100D) + "%)";
             }
         }
 
