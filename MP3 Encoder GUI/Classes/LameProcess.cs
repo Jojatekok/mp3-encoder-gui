@@ -70,7 +70,7 @@ namespace MP3EncoderGUI
         {
             _lameProc.Kill();
             ProgressChanged = null;
-            new Thread(TryDeleteOutput).Start();
+            ThreadPool.QueueUserWorkItem(TryDeleteOutput);
         }
 
         private void Lame_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -100,7 +100,7 @@ namespace MP3EncoderGUI
             return false; // Fail
         }
 
-        private void TryDeleteOutput()
+        private void TryDeleteOutput(object sender)
         {
             do {
                 if (DeleteOutput()) {

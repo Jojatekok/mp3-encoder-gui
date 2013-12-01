@@ -1,10 +1,5 @@
-﻿using System;
-
-namespace WpfCustomControls
+﻿namespace WpfCustomControls
 {
-    /// <summary>
-    /// Interaction logic for ProgressBarWithText.xaml
-    /// </summary>
     public partial class ProgressBarWithText
     {
         #region Declarations
@@ -22,8 +17,8 @@ namespace WpfCustomControls
             }
         }
 
-        private uint _value;
-        public uint Value {
+        private byte _value;
+        public byte Value {
             get { return _value; }
 
             set {
@@ -42,8 +37,8 @@ namespace WpfCustomControls
             }
         }
 
-        private uint _minimum;
-        public uint Minimum {
+        private byte _minimum;
+        public byte Minimum {
             get { return _minimum; }
 
             set {
@@ -60,8 +55,8 @@ namespace WpfCustomControls
             }
         }
 
-        private uint _maximum = uint.MaxValue;
-        public uint Maximum {
+        private byte _maximum = 100;
+        public byte Maximum {
             get { return _maximum; }
 
             set {
@@ -78,11 +73,12 @@ namespace WpfCustomControls
             }
         }
 
-        public bool IsMarquee {
+        public bool IsIndeterminate {
             get { return ProgressBar1.IsIndeterminate; }
-            set {
-                if (value == IsMarquee) return;
 
+            set {
+                if (value == IsIndeterminate) return;
+                
                 ProgressBar1.IsIndeterminate = value;
                 RefreshText();
             }
@@ -98,23 +94,17 @@ namespace WpfCustomControls
             RefreshText();
         }
 
-        public void Reset() {
-            _minimum = 0U;
-            Value = 0U;
-        }
-
         private void RefreshText()
         {
-            if (Value == Maximum) {
-                TextBlock1.Text = "Done!";
-            } else if (IsMarquee) {
+            if (IsIndeterminate) {
                 TextBlock1.Text = Text;
+            } else if (Value == Maximum) {
+                TextBlock1.Text = "Done!";
             } else {
-                TextBlock1.Text = Text + " (" + Math.Floor((double)Value / Maximum * 100D) + "%)";
+                TextBlock1.Text = Text + " (" + Value + "%)";
             }
         }
 
         #endregion
-
     }
 }

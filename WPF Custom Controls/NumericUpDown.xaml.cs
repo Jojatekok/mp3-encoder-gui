@@ -3,9 +3,6 @@ using System.Windows.Input;
 
 namespace WpfCustomControls
 {
-    /// <summary>
-    /// Interaction logic for NumericUpDown.xaml
-    /// </summary>
     public partial class NumericUpDown
     {
         #region Declarations
@@ -51,28 +48,28 @@ namespace WpfCustomControls
             if (Value == null) {
                 Value = Minimum;
             } else {
-                Value += 1;
+                Value += 1U;
             }
         }
 
         private void DecreaseValue(object sender, RoutedEventArgs e)
         {
             if (Value == null) {
-                Value = Maximum;
+                Value = Minimum;
             } else {
-                Value -= 1;
+                Value -= 1U;
             }
         }
 
         private void Buttons_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (Value != Minimum) {
-                NumberBox1.TextBoxNumber.SelectionStart = NumberBox1.TextBoxNumber.Text.Length;
+                NumberBox1.TextBox1.SelectionStart = NumberBox1.TextBox1.Text.Length;
             } else {
-                NumberBox1.TextBoxNumber.SelectAll();
+                NumberBox1.TextBox1.SelectAll();
             }
 
-            NumberBox1.TextBoxNumber.Focus();
+            NumberBox1.TextBox1.Focus();
         }
 
         #endregion

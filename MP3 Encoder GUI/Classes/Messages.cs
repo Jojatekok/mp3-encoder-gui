@@ -8,6 +8,8 @@ namespace MP3EncoderGUI
     {
         #region Methods
 
+        #region Error
+
         internal static void ShowError(Window window, IList<string> error, params string[] arguments)
         {
             MessageBox.Show(window, string.Format(Helper.InvariantCulture, error[1], arguments), error[0], MessageBoxButton.OK, MessageBoxImage.Error);
@@ -22,6 +24,22 @@ namespace MP3EncoderGUI
         {
             ShowError(window, new[] { Errors.DefaultTitle, errorMessage }, arguments);
         }
+
+        internal static void ShowErrorByDispatcher(Window window, IList<string> error, params string[] arguments)
+        {
+            window.Dispatcher.Invoke(() =>
+                ShowError(window, error, arguments)
+            );
+        }
+
+        internal static void ShowErrorByDispatcher(Window window, string errorMessage, params string[] arguments)
+        {
+            ShowErrorByDispatcher(window, new[] { Warnings.DefaultTitle, errorMessage }, arguments);
+        }
+
+        #endregion
+
+        #region Warning
 
         internal static MessageBoxResult ShowWarning(Window window, IList<string> warning, params string[] arguments)
         {
@@ -45,6 +63,10 @@ namespace MP3EncoderGUI
             return ShowWarningByDispatcher(window, new[] { Warnings.DefaultTitle, warningMessage }, arguments);
         }
 
+        #endregion
+
+        #region Question
+
         internal static MessageBoxResult ShowQuestion(Window window, IList<string> question, params string[] arguments)
         {
             return MessageBox.Show(window, string.Format(Helper.InvariantCulture, question[1], arguments), question[0], MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -54,6 +76,20 @@ namespace MP3EncoderGUI
         //{
         //    return ShowWarning(window, new[] { Questions.DefaultTitle, questionMessage }, arguments);
         //}
+
+        internal static MessageBoxResult ShowQuestionByDispatcher(Window window, IList<string> question, params string[] arguments)
+        {
+            return window.Dispatcher.Invoke(() =>
+                ShowQuestion(window, question, arguments)
+            );
+        }
+
+        //internal static MessageBoxResult ShowQuestionByDispatcher(Window window, string questionMessage, params string[] arguments)
+        //{
+        //    return ShowQuestionByDispatcher(window, new[] { Warnings.DefaultTitle, questionMessage }, arguments);
+        //}
+
+        #endregion
 
         #endregion
 

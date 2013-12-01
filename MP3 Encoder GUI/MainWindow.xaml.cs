@@ -10,12 +10,10 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Shell;
 
 namespace MP3EncoderGUI
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public sealed partial class MainWindow : IDisposable
     {
         #region Declarations
@@ -35,16 +33,17 @@ namespace MP3EncoderGUI
             set {
                 if (value == IsCheckingForUpdates) return;
 
-                if (value) {
-                    ProgressBarEncoding.IsMarquee = true;
+                if (value)
+                {
+                    TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Indeterminate;
                     ProgressBarEncoding.Text = "Checking for updates...";
                     GridProgress.Visibility = Visibility.Visible;
                     ButtonStart.Visibility = Visibility.Hidden;
 
                 } else {
+                    TaskbarItemInfo.ProgressState = TaskbarItemProgressState.None;
                     ButtonStart.Visibility = Visibility.Visible;
                     GridProgress.Visibility = Visibility.Hidden;
-                    ProgressBarEncoding.IsMarquee = false;
                     ProgressBarEncoding.Text = "Encoding...";
                 }
 
@@ -70,7 +69,7 @@ namespace MP3EncoderGUI
             ProgressBarEncoding.Text = "Encoding...";
 #else
             if (IsConnectedToInternet()) {
-                CheckForUpdates();
+                ThreadPool.QueueUserWorkItem(CheckForUpdates);
             } else {
                 ProgressBarEncoding.Text = "Encoding...";
             }
@@ -89,6 +88,12 @@ namespace MP3EncoderGUI
             Dispose();
         }
 
+        private void TaskbarItemInfo_Changed(object sender, EventArgs e)
+        {
+            ProgressBarEncoding.IsIndeterminate = TaskbarItemInfo.ProgressState == TaskbarItemProgressState.Indeterminate;
+            ProgressBarEncoding.Value = (byte)(TaskbarItemInfo.ProgressValue * 100D);
+        }
+
         #endregion
 
         #region Check for updates
@@ -99,14 +104,14 @@ namespace MP3EncoderGUI
             return NativeMethods.InternetGetConnectedState(out tmp, 0);
         }
 
-        private async void CheckForUpdates()
+        private void CheckForUpdates(object sender)
         {
-            IsCheckingForUpdates = true;
+            _syncContext.Send(_ => IsCheckingForUpdates = true, null);
 
             using (var webClient = new WebClient()) {
                 try {
                     var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                    var latestVersionString = await webClient.DownloadStringTaskAsync(new Uri("http://jojatekok.github.io/mp3-encoder-gui/version.txt"));
+                    var latestVersionString = webClient.DownloadString(new Uri("http://jojatekok.github.io/mp3-encoder-gui/version.txt"));
 
                     if (new Version(latestVersionString).CompareTo(currentVersion) > 0) {
                         var updateName = "Update (v" + latestVersionString + ")";
@@ -114,19 +119,21 @@ namespace MP3EncoderGUI
 
                         // Start downloading the update and notify the user about it
                         using (var downloadTask = webClient.DownloadFileTaskAsync(new Uri("http://jojatekok.github.io/mp3-encoder-gui/latest.zip"), updatePath + ".zip")) {
-                            if (IsCheckingForUpdates && Messages.ShowQuestion(this, Messages.Questions.UpdateAvailable, latestVersionString) == MessageBoxResult.Yes) {
-                                ButtonStop.IsEnabled = false;
-                                ProgressBarEncoding.Text = "Applying update...";
+                            if (IsCheckingForUpdates && Messages.ShowQuestionByDispatcher(this, Messages.Questions.UpdateAvailable, latestVersionString) == MessageBoxResult.Yes) {
+                                _syncContext.Send(_ => {
+                                    ButtonStop.IsEnabled = false;
+                                    ProgressBarEncoding.Text = "Applying update...";
+                                }, null);
 
                             } else {
-                                IsCheckingForUpdates = false;
+                                _syncContext.Send(_ => IsCheckingForUpdates = false, null);
                                 try {
                                     File.Delete(updatePath + ".zip");
                                 } catch { }
                                 return;
                             }
 
-                            await downloadTask;
+                            downloadTask.Wait();
                         }
 
                         // Extract the downloaded update
@@ -134,11 +141,11 @@ namespace MP3EncoderGUI
 
                         // Write a batch file which applies the update
                         using (var writer = new StreamWriter(Helper.AppStartDirectory + "Updater.bat")) {
-                            await writer.WriteAsync("XCOPY /V /Q /R /Y \"" + updateName + "\"" + Environment.NewLine +
-                                                    "START \"\" \"MP3 Encoder GUI.exe\"" + Environment.NewLine +
-                                                    "RD /S /Q \"" + updateName + "\"" + Environment.NewLine +
-                                                    "DEL /F /Q \"" + updateName + ".zip\"" + Environment.NewLine +
-                                                    "DEL /F /Q %0");
+                            writer.Write("XCOPY /V /Q /R /Y \"" + updateName + "\"" + Environment.NewLine +
+                                         "START \"\" \"MP3 Encoder GUI.exe\"" + Environment.NewLine +
+                                         "RD /S /Q \"" + updateName + "\"" + Environment.NewLine +
+                                         "DEL /F /Q \"" + updateName + ".zip\"" + Environment.NewLine +
+                                         "DEL /F /Q %0");
                         }
 
                         new Process {
@@ -148,15 +155,15 @@ namespace MP3EncoderGUI
                             }
                         }.Start();
 
-                        Application.Current.Shutdown();
+                        _syncContext.Send(_ => Application.Current.Shutdown(), null);
                     }
 
                 } catch {
-                    Messages.ShowError(this, Messages.Errors.UpdateCheckFailed);
+                    Messages.ShowErrorByDispatcher(this, Messages.Errors.UpdateCheckFailed);
                 }
             }
 
-            IsCheckingForUpdates = false;
+            _syncContext.Send(_ => IsCheckingForUpdates = false, null);
         }
 
         #endregion
@@ -358,31 +365,30 @@ namespace MP3EncoderGUI
             LockOptionControls(false);
             
             ButtonStop.Content = "Cancel";
-            ProgressBarEncoding.Reset();
         }
 
         public void LockOptionControls(bool doLock)
         {
             if (doLock) {
+                TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Normal;
+
                 GridProgress.Visibility = Visibility.Visible;
                 ButtonStart.Visibility = Visibility.Hidden;
+
+                var tmp = ComboBoxGenre.Text;
+                ComboBoxGenre.ItemsSource = null;
+                if (MusicGenres.GenreDictionary.ContainsKey(tmp)) {
+                    ComboBoxGenre.SelectedValue = tmp;
+                }
+                ComboBoxGenre.Text = tmp;
 
                 ButtonChangeCoverArt.IsEnabled = false;
                 ButtonRemoveCoverArt.IsEnabled = false;
 
-                if (ComboBoxGenre.SelectedValue != null) {
-                    var tmp = ComboBoxGenre.SelectedValue;
-                    ComboBoxGenre.ItemsSource = null;
-                    ComboBoxGenre.SelectedValue = tmp;
-                    ComboBoxGenre.Text = tmp as string;
-
-                } else {
-                    var tmp = ComboBoxGenre.Text;
-                    ComboBoxGenre.ItemsSource = null;
-                    ComboBoxGenre.Text = tmp;
-                }
-
             } else {
+                TaskbarItemInfo.ProgressState = TaskbarItemProgressState.None;
+                TaskbarItemInfo.ProgressValue = 0D;
+
                 ButtonStart.Visibility = Visibility.Visible;
                 GridProgress.Visibility = Visibility.Hidden;
 
@@ -393,6 +399,9 @@ namespace MP3EncoderGUI
                     ButtonRemoveCoverArt.IsEnabled = true;
                 }
             }
+
+            ButtonInputFile.IsEnabled = !doLock;
+            ButtonOutputFile.IsEnabled = !doLock;
 
             ComboBoxGenre.IsReadOnly = doLock;
             NumericUpDownYear.IsReadOnly = doLock;
@@ -410,10 +419,9 @@ namespace MP3EncoderGUI
         private void LameProc_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             _syncContext.Send(_ => {
-                ProgressBarEncoding.Maximum = e.Maximum;
-                ProgressBarEncoding.Value = e.NewValue;
+                TaskbarItemInfo.ProgressValue = (double)e.NewValue / e.Maximum;
             }, null);
-
+            
             if (e.NewValue == e.Maximum) {
                 _syncContext.Send(_ => ButtonStop.Content = "Ok", null);
             }

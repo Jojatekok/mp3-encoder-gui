@@ -6,9 +6,6 @@ using System.Windows.Input;
 
 namespace WpfCustomControls
 {
-    /// <summary>
-    /// Interaction logic for NumberBox.xaml
-    /// </summary>
     public sealed partial class NumberBox
     {
         #region Events
@@ -35,7 +32,7 @@ namespace WpfCustomControls
                     if (value < Minimum) {
                         value = Minimum;
                         OverwriteValue(Minimum, true);
-                        TextBoxNumber.SelectAll();
+                        TextBox1.SelectAll();
 
                     } else if (value > Maximum) {
                         value = Maximum;
@@ -45,7 +42,7 @@ namespace WpfCustomControls
                 if (value == _value) { return; }
 
                 _value = value;
-                if (value != null && TextBoxNumber.Text != value.ToString()) {
+                if (value != null && TextBox1.Text != value.ToString()) {
                     OverwriteValue(value.Value, true);
                 }
 
@@ -86,7 +83,7 @@ namespace WpfCustomControls
             {
                 if (value == _isReadOnly) { return; }
 
-                TextBoxNumber.IsReadOnly = value;
+                TextBox1.IsReadOnly = value;
                 _isReadOnly = value;
             }
         }
@@ -99,12 +96,12 @@ namespace WpfCustomControls
         {
             InitializeComponent();
 
-            DataObject.AddPastingHandler(TextBoxNumber, TextBoxNumber_OnPaste);
+            DataObject.AddPastingHandler(TextBox1, TextBoxNumber_OnPaste);
         }
 
         public void Clear()
         {
-            TextBoxNumber.Text = string.Empty;
+            TextBox1.Text = string.Empty;
         }
 
         private void TextBoxNumber_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -128,9 +125,9 @@ namespace WpfCustomControls
         private void TextBoxNumber_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isTextChangingProgrammatically) {
-                if (TextBoxNumber.Text.Length != 0) {
+                if (TextBox1.Text.Length != 0) {
                     uint parsedNum;
-                    if (uint.TryParse(TextBoxNumber.Text, out parsedNum)) {
+                    if (uint.TryParse(TextBox1.Text, out parsedNum)) {
                         if (parsedNum < Maximum) {
                             Value = parsedNum;
                         } else {
@@ -177,9 +174,9 @@ namespace WpfCustomControls
         private void OverwriteValue(uint newValue, bool textOnly = false)
         {
             _isTextChangingProgrammatically = true;
-            var selStart = TextBoxNumber.SelectionStart;
-            TextBoxNumber.Text = newValue.ToString(InvariantCulture);
-            TextBoxNumber.SelectionStart = selStart;
+            var selStart = TextBox1.SelectionStart;
+            TextBox1.Text = newValue.ToString(InvariantCulture);
+            TextBox1.SelectionStart = selStart;
             _isTextChangingProgrammatically = false;
 
             if (!textOnly) { Value = newValue; }
