@@ -2,9 +2,9 @@
 
 namespace MP3EncoderGUI
 {
-    public static class MusicGenres
+    public static class Dictionaries
     {
-        private static readonly Dictionary<string, byte> _genreDictionary = new Dictionary<string, byte> {
+        private static readonly Dictionary<string, byte> _musicGenres = new Dictionary<string, byte> {
             { "A Cappella", 123 },
             { "Acid", 34 },
             { "Acid Jazz", 74 },
@@ -154,8 +154,25 @@ namespace MP3EncoderGUI
             { "Trip-Hop", 27 },
             { "Vocal", 28 }
         };
-        public static Dictionary<string, byte> GenreDictionary {
-            get { return _genreDictionary; }
+        public static Dictionary<string, byte> MusicGenres {
+            get { return _musicGenres; }
+        }
+
+        private static readonly Dictionary<byte, string> _vbrQualities = new Dictionary<byte, string> {
+            { 0, "Highest, biggest file" },
+            { 1, "High" },
+            { 2, "High" },
+            { 3, "Medium" },
+            { 4, "Medium" },
+            { 5, "Medium" },
+            { 6, "Medium" },
+            { 7, "Low" },
+            { 8, "Low" },
+            { 9, "Lowest, smallest file" }
+        };
+        public static Dictionary<byte, string> VbrQualities
+        {
+            get { return _vbrQualities; }
         }
     }
 }

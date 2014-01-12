@@ -1,4 +1,6 @@
-﻿namespace WpfCustomControls
+﻿using System.Runtime.CompilerServices;
+
+namespace WpfCustomControls
 {
     public partial class ProgressBarWithText
     {
@@ -7,6 +9,7 @@
         private string _text;
         public string Text
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _text; }
 
             set {
@@ -19,6 +22,7 @@
 
         private byte _value;
         public byte Value {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
 
             set {
@@ -39,6 +43,7 @@
 
         private byte _minimum;
         public byte Minimum {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _minimum; }
 
             set {
@@ -57,6 +62,7 @@
 
         private byte _maximum = 100;
         public byte Maximum {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _maximum; }
 
             set {

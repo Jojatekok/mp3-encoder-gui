@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,8 +12,6 @@ namespace MP3EncoderGUI
     internal static class Helper
     {
         #region Declarations
-
-        private const string DefaultEncodingParams = "--replaygain-accurate --strictly-enforce-ISO --id3v2-latin1 -q 0 -b 320";
 
         private static readonly string _appStartDirectory = AppDomain.CurrentDomain.BaseDirectory;
         internal static string AppStartDirectory {
@@ -28,9 +27,16 @@ namespace MP3EncoderGUI
 
         #region Methods
 
+        internal static bool IsNetFramework45Installed()
+        {
+            using (var ndpKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\")) {
+                return ndpKey != null && (int)ndpKey.GetValue("Release") >= 378389;
+            }
+        }
+
         internal static string GetEncodingParams(MainWindow window)
         {
-            var output = DefaultEncodingParams;
+            var output = string.Empty;
 
             // [ID3] Title
             if (window.TextBoxTitle.Text.Length != 0) {
@@ -50,7 +56,7 @@ namespace MP3EncoderGUI
             // [ID3] Genre
             if (window.ComboBoxGenre.Text.Length != 0) {
                 byte genreId;
-                if (MusicGenres.GenreDictionary.TryGetValue(window.ComboBoxGenre.Text, out genreId)) {
+                if (Dictionaries.MusicGenres.TryGetValue(window.ComboBoxGenre.Text, out genreId)) {
                     output += " --tg " + genreId;
                 } else {
                     output += " --tg \"" + window.ComboBoxGenre.Text + "\"";
@@ -78,6 +84,29 @@ namespace MP3EncoderGUI
             // [ID3] Cover art
             if (window.CoverArtPath != null) {
                 output += " --ti \"" + window.CoverArtPath + "\"";
+            }
+
+            // Quality options
+            if (window.RadioButtonBitrateConstant.IsChecked != null && window.RadioButtonBitrateConstant.IsChecked.Value) {
+                output += " --cbr -b " + window.BitrateSelectorNonVbr.Value;
+
+            } else if (window.RadioButtonBitrateAverage.IsChecked != null && window.RadioButtonBitrateAverage.IsChecked.Value) {
+                output += " --abr " + window.BitrateSelectorNonVbr.Value;
+
+            } else if (window.RadioButtonBitrateVariable.IsChecked != null && window.RadioButtonBitrateVariable.IsChecked.Value) {
+                output += " -F -b " + window.BitrateSelectorVbr.MinValue +
+                          " -B " + window.BitrateSelectorVbr.MaxValue +
+                          " -V " + window.QualitySliderVbr.Value;
+            }
+
+            var tmp = window.SamplingFrequencySelectorNonVbr.Value;
+            if (tmp != 0) {
+                output += " --resample " + ((float)tmp / 1000).ToString("0.0");
+            }
+
+            // Extra command line arguments
+            if (window.TextBoxExtraCmdArgs.Text.Length != 0) {
+                output += " " + window.TextBoxExtraCmdArgs.Text;
             }
 
             return output;
@@ -129,5 +158,15 @@ namespace MP3EncoderGUI
         [DllImport("wininet.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal extern static bool InternetGetConnectedState(out int description, int reservedValue);
+    }
+
+    public class UshortValueChangedEventArgs : EventArgs
+    {
+        public ushort NewValue { get; private set; }
+
+        public UshortValueChangedEventArgs(ushort newValue)
+        {
+            NewValue = newValue;
+        }
     }
 }

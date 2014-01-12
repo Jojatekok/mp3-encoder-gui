@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,7 +11,7 @@ namespace WpfCustomControls
     {
         #region Events
 
-        public event EventHandler<ValueChangedEventArgs> ValueChanged;
+        public event EventHandler<NuintValueChangedEventArgs> ValueChanged;
 
         #endregion
 
@@ -23,6 +24,7 @@ namespace WpfCustomControls
         private uint? _value;
         public uint? Value
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
 
             set {
@@ -46,12 +48,13 @@ namespace WpfCustomControls
                     OverwriteValue(value.Value, true);
                 }
 
-                OnValueChanged(new ValueChangedEventArgs(value));
+                OnValueChanged(new NuintValueChangedEventArgs(value));
             }
         }
 
         private uint _minimum;
         public uint Minimum {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _minimum; }
 
             set {
@@ -64,6 +67,7 @@ namespace WpfCustomControls
 
         private uint _maximum = uint.MaxValue;
         public uint Maximum {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _maximum; }
 
             set {
@@ -77,6 +81,7 @@ namespace WpfCustomControls
         private bool _isReadOnly;
         public bool IsReadOnly
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _isReadOnly; }
 
             set
@@ -99,11 +104,13 @@ namespace WpfCustomControls
             DataObject.AddPastingHandler(TextBox1, TextBoxNumber_OnPaste);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             TextBox1.Text = string.Empty;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             if (!IsInputValid(e.Text)) {
@@ -111,6 +118,7 @@ namespace WpfCustomControls
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_OnPaste(object sender, DataObjectPastingEventArgs e)
         {
             if (e.SourceDataObject.GetDataPresent(DataFormats.Text)) {
@@ -122,6 +130,7 @@ namespace WpfCustomControls
             e.CancelCommand();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isTextChangingProgrammatically) {
@@ -144,7 +153,8 @@ namespace WpfCustomControls
             }
         }
 
-        private void OnValueChanged(ValueChangedEventArgs e)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void OnValueChanged(NuintValueChangedEventArgs e)
         {
             if (ValueChanged != null)
                 ValueChanged(this, e);
@@ -159,6 +169,7 @@ namespace WpfCustomControls
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool StringIsNumber(string input)
         {
             for (var i = input.Length - 1; i >= 0; i--) {
@@ -185,11 +196,11 @@ namespace WpfCustomControls
         #endregion
     }
 
-    public class ValueChangedEventArgs : EventArgs
+    public class NuintValueChangedEventArgs : EventArgs
     {
         public uint? NewValue { get; private set; }
 
-        public ValueChangedEventArgs(uint? newValue)
+        public NuintValueChangedEventArgs(uint? newValue)
         {
             NewValue = newValue;
         }

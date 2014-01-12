@@ -39,9 +39,13 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xaml" />
@@ -60,6 +64,20 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Classes\Extensions.cs" />
+    <Compile Include="Classes\Mp3Types.cs" />
+    <Compile Include="User controls\BitrateSelectorSimple.xaml.cs">
+      <DependentUpon>BitrateSelectorSimple.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="User controls\BitrateSelectorVariable.xaml.cs">
+      <DependentUpon>BitrateSelectorVariable.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="User controls\SamplingFrequencySelector.xaml.cs">
+      <DependentUpon>SamplingFrequencySelector.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="User controls\VbrQualitySlider.xaml.cs">
+      <DependentUpon>VbrQualitySlider.xaml</DependentUpon>
+    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -71,7 +89,23 @@
     <Compile Include="Classes\Helper.cs" />
     <Compile Include="Classes\LameProcess.cs" />
     <Compile Include="Classes\Messages.cs" />
-    <Compile Include="Classes\MusicGenres.cs" />
+    <Compile Include="Classes\Dictionaries.cs" />
+    <Page Include="User controls\BitrateSelectorSimple.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="User controls\BitrateSelectorVariable.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="User controls\SamplingFrequencySelector.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="User controls\VbrQualitySlider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <AppDesigner Include="Properties\" />
@@ -80,7 +114,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="Resources\Icon.ico" />
+    <None Include="Resources\Icon.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

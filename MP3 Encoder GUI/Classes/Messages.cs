@@ -99,6 +99,11 @@ namespace MP3EncoderGUI
         {
             public const string DefaultTitle = "Error";
 
+            private const string _netFramework45NotFound = "Microsoft .NET Framework 4.5 could not be found on your system. Please download and install the latest version of the Framework, and then try launching the application again.";
+            public static string NetFramework45NotFound {
+                get { return _netFramework45NotFound; }
+            }
+
             private const string _updateCheckFailed = "Failed to check for updates.";
             public static string UpdateCheckFailed {
                 get { return _updateCheckFailed; }

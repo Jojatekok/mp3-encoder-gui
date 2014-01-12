@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="MP3EncoderGUI.UserControls.BitrateSelectorVariable"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        
+        <ComboBox x:Name="ComboBoxMinimum" SelectionChanged="ComboBoxMinimum_SelectionChanged"/>
+        <TextBlock Grid.Column="1" Text="-" VerticalAlignment="Center" Margin="4,0"/>
+        <ComboBox Grid.Column="2" x:Name="ComboBoxMaximum" SelectionChanged="ComboBoxMaximum_SelectionChanged"/>
+    </Grid>
+</UserControl>

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 
 namespace WpfCustomControls
@@ -43,6 +44,7 @@ namespace WpfCustomControls
             InitializeComponent();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void IncreaseValue(object sender, RoutedEventArgs e)
         {
             if (Value == null) {
@@ -52,6 +54,7 @@ namespace WpfCustomControls
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DecreaseValue(object sender, RoutedEventArgs e)
         {
             if (Value == null) {

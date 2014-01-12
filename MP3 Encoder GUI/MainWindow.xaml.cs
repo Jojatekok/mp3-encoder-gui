@@ -1,5 +1,8 @@
-﻿using Microsoft.Win32;
+﻿using System.Drawing;
+using System.Windows.Media;
+using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +21,7 @@ namespace MP3EncoderGUI
     {
         #region Declarations
 
-        private readonly SynchronizationContext _syncContext;
+        private readonly SynchronizationContext _syncContext = SynchronizationContext.Current;
         private LameProcess _lameProc;
 
         public string CoverArtPath { get; private set; }
@@ -33,8 +36,7 @@ namespace MP3EncoderGUI
             set {
                 if (value == IsCheckingForUpdates) return;
 
-                if (value)
-                {
+                if (value) {
                     TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Indeterminate;
                     ProgressBarEncoding.Text = "Checking for updates...";
                     GridProgress.Visibility = Visibility.Visible;
@@ -44,7 +46,7 @@ namespace MP3EncoderGUI
                     TaskbarItemInfo.ProgressState = TaskbarItemProgressState.None;
                     ButtonStart.Visibility = Visibility.Visible;
                     GridProgress.Visibility = Visibility.Hidden;
-                    ProgressBarEncoding.Text = "Encoding...";
+                    ProgressBarEncoding_ResetText();
                 }
 
                 _isCheckingForUpdates = value;
@@ -60,18 +62,40 @@ namespace MP3EncoderGUI
         public MainWindow()
         {
             InitializeComponent();
-            _syncContext = SynchronizationContext.Current;
 
-            ComboBoxGenre.ItemsSource = MusicGenres.GenreDictionary.Keys;
+            #region Arguments support
+
+            var cmdArgs = new List<string>(Environment.GetCommandLineArgs());
+            cmdArgs.RemoveAt(0);
+
+            // -f: Force starting the application, without checking for updates
+            if (cmdArgs.Contains("-f")) {
+                ProgressBarEncoding_ResetText();
+                return;
+            }
+
+            #endregion
+
+            // Throw error and exit if the required version of the .NET Framework is not installed
+            if (!Helper.IsNetFramework45Installed()) {
+                Messages.ShowError(this, Messages.Errors.NetFramework45NotFound);
+                Application.Current.Shutdown();
+                return;
+            }
+
+            // Prepare the icon, and parse the pre-defined genres' list
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location).ToImageSource();
+            ComboBoxGenre.ItemsSource = Dictionaries.MusicGenres.Keys;
+            TextBoxExtraCmdArgs.SelectionStart = TextBoxExtraCmdArgs.Text.Length;
 
 #if DEBUG
             // Do not check for updates
-            ProgressBarEncoding.Text = "Encoding...";
+            ProgressBarEncoding_ResetText();
 #else
             if (IsConnectedToInternet()) {
                 ThreadPool.QueueUserWorkItem(CheckForUpdates);
             } else {
-                ProgressBarEncoding.Text = "Encoding...";
+                ProgressBarEncoding_ResetText();
             }
 #endif
         }
@@ -142,7 +166,7 @@ namespace MP3EncoderGUI
                         // Write a batch file which applies the update
                         using (var writer = new StreamWriter(Helper.AppStartDirectory + "Updater.bat")) {
                             writer.Write("XCOPY /V /Q /R /Y \"" + updateName + "\"" + Environment.NewLine +
-                                         "START \"\" \"MP3 Encoder GUI.exe\"" + Environment.NewLine +
+                                         "START \"\" \"MP3 Encoder GUI.exe\" -f" + Environment.NewLine +
                                          "RD /S /Q \"" + updateName + "\"" + Environment.NewLine +
                                          "DEL /F /Q \"" + updateName + ".zip\"" + Environment.NewLine +
                                          "DEL /F /Q %0");
@@ -230,7 +254,7 @@ namespace MP3EncoderGUI
 
         #region Encoding options
 
-        private void NumberBoxTrack1_ValueChanged(object sender, WpfCustomControls.ValueChangedEventArgs e)
+        private void NumberBoxTrack1_ValueChanged(object sender, WpfCustomControls.NuintValueChangedEventArgs e)
         {
             if (e.NewValue != null) {
                 NumberBoxTrack2.IsEnabled = true;
@@ -377,7 +401,7 @@ namespace MP3EncoderGUI
 
                 var tmp = ComboBoxGenre.Text;
                 ComboBoxGenre.ItemsSource = null;
-                if (MusicGenres.GenreDictionary.ContainsKey(tmp)) {
+                if (Dictionaries.MusicGenres.ContainsKey(tmp)) {
                     ComboBoxGenre.SelectedValue = tmp;
                 }
                 ComboBoxGenre.Text = tmp;
@@ -392,7 +416,7 @@ namespace MP3EncoderGUI
                 ButtonStart.Visibility = Visibility.Visible;
                 GridProgress.Visibility = Visibility.Hidden;
 
-                ComboBoxGenre.ItemsSource = MusicGenres.GenreDictionary.Keys;
+                ComboBoxGenre.ItemsSource = Dictionaries.MusicGenres.Keys;
 
                 ButtonChangeCoverArt.IsEnabled = true;
                 if (ImageCoverArt.Source != null) {
@@ -411,8 +435,14 @@ namespace MP3EncoderGUI
             TextBoxInputFile.IsReadOnly = doLock;
             TextBoxOutputFile.IsReadOnly = doLock;
 
+            TextBoxExtraCmdArgs.IsReadOnly = doLock;
+
             foreach (var textBox in Helper.FindVisualChildren<TextBox>(TabControlEncodingOptions)) {
                 textBox.IsReadOnly = doLock;
+            }
+
+            foreach (var control in Helper.FindVisualChildren<Control>(GridEncodingOptionsQuality)) {
+                control.IsEnabled = !doLock;
             }
         }
 
@@ -430,6 +460,15 @@ namespace MP3EncoderGUI
         private void LameProc_Disposed(object sender, EventArgs e)
         {
             _lameProc = null;
+        }
+
+        #endregion
+
+        #region Miscellaneous
+
+        private void ProgressBarEncoding_ResetText()
+        {
+            ProgressBarEncoding.Text = "Encoding...";
         }
 
         #endregion
@@ -455,5 +494,44 @@ namespace MP3EncoderGUI
         }
 
         #endregion
+
+        private void RadioButtonBitrateNonVbr_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsInitialized) return;
+
+            if (Equals(sender, RadioButtonBitrateConstant)) {
+                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
+
+            } else {
+                BitrateSelectorNonVbr.UpdateValidValues(Mp3Types.All);
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(Mp3Types.All);
+            }
+
+            GridQualityOptionsNonVbr.Visibility = Visibility.Visible;
+            GridQualityOptionsVbr.Visibility = Visibility.Hidden;
+        }
+
+        private void RadioButtonBitrateVbr_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsInitialized) return;
+
+            GridQualityOptionsVbr.Visibility = Visibility.Visible;
+            GridQualityOptionsNonVbr.Visibility = Visibility.Hidden;
+        }
+
+        private void QualityOptionsNonVbrBitrate_ValueChanged(object sender, UshortValueChangedEventArgs e)
+        {
+            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
+            }
+        }
+
+        private void QualityOptionsNonVbrSamplingFrequency_ValueChanged(object sender, UshortValueChangedEventArgs e)
+        {
+            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
+                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
+            }
+        }
     }
 }

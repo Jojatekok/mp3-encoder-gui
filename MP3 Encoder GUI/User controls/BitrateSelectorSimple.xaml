@@ -1,0 +1,5 @@
+﻿<UserControl x:Class="MP3EncoderGUI.UserControls.BitrateSelectorSimple"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ComboBox x:Name="ComboBox1" SelectionChanged="ComboBox1_SelectionChanged"/>
+</UserControl>
