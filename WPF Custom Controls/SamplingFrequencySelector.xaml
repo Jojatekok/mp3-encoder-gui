@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MP3EncoderGUI.UserControls.SamplingFrequencySelector"
+﻿<UserControl x:Class="WpfCustomControls.SamplingFrequencySelector"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ComboBox x:Name="ComboBox1" SelectionChanged="ComboBox1_SelectionChanged"/>

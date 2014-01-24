@@ -17,8 +17,6 @@ namespace WpfCustomControls
 
         #region Declarations
 
-        private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
-
         private bool _isTextChangingProgrammatically;
 
         private uint? _value;
@@ -110,7 +108,6 @@ namespace WpfCustomControls
             TextBox1.Text = string.Empty;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             if (!IsInputValid(e.Text)) {
@@ -118,7 +115,6 @@ namespace WpfCustomControls
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_OnPaste(object sender, DataObjectPastingEventArgs e)
         {
             if (e.SourceDataObject.GetDataPresent(DataFormats.Text)) {
@@ -130,7 +126,6 @@ namespace WpfCustomControls
             e.CancelCommand();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TextBoxNumber_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (!_isTextChangingProgrammatically) {
@@ -169,7 +164,6 @@ namespace WpfCustomControls
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool StringIsNumber(string input)
         {
             for (var i = input.Length - 1; i >= 0; i--) {
@@ -186,7 +180,7 @@ namespace WpfCustomControls
         {
             _isTextChangingProgrammatically = true;
             var selStart = TextBox1.SelectionStart;
-            TextBox1.Text = newValue.ToString(InvariantCulture);
+            TextBox1.Text = newValue.ToString(Helper.InvariantCulture);
             TextBox1.SelectionStart = selStart;
             _isTextChangingProgrammatically = false;
 

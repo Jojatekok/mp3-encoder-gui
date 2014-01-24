@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MP3EncoderGUI.UserControls.BitrateSelectorVariable"
+﻿<UserControl x:Class="WpfCustomControls.BitrateSelectorVariable"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid>
@@ -10,6 +10,6 @@
         
         <ComboBox x:Name="ComboBoxMinimum" SelectionChanged="ComboBoxMinimum_SelectionChanged"/>
         <TextBlock Grid.Column="1" Text="-" VerticalAlignment="Center" Margin="4,0"/>
-        <ComboBox Grid.Column="2" x:Name="ComboBoxMaximum" SelectionChanged="ComboBoxMaximum_SelectionChanged"/>
+        <ComboBox x:Name="ComboBoxMaximum" Grid.Column="2" SelectionChanged="ComboBoxMaximum_SelectionChanged"/>
     </Grid>
 </UserControl>

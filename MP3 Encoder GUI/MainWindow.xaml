@@ -1,7 +1,6 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:customControls="clr-namespace:WpfCustomControls;assembly=WpfCustomControls"
-        xmlns:userControls="clr-namespace:MP3EncoderGUI.UserControls"
         x:Class="MP3EncoderGUI.MainWindow"
         Title="MP3 Encoder GUI" WindowStartupLocation="CenterScreen"
         Width="525" Height="500"
@@ -126,11 +125,11 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Text="Bitrate value:" VerticalAlignment="Center" Margin="3,0,5,0"/>
-                            <userControls:BitrateSelectorSimple x:Name="BitrateSelectorNonVbr" Grid.Row="0" Grid.Column="1" Margin="3" ValueChanged="QualityOptionsNonVbrBitrate_ValueChanged"/>
+                            <customControls:BitrateSelectorSimple x:Name="BitrateSelectorNonVbr" Grid.Row="0" Grid.Column="1" Margin="3" ValueChanged="BitrateSelectorNonVbr_ValueChanged"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="kbps" VerticalAlignment="Center" Margin="5,0,3,0"/>
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Sampling frequency:" VerticalAlignment="Center" Margin="3,0,5,0"/>
-                            <userControls:SamplingFrequencySelector x:Name="SamplingFrequencySelectorNonVbr" Grid.Row="1" Grid.Column="1" Margin="3" ValueChanged="QualityOptionsNonVbrSamplingFrequency_ValueChanged"/>
+                            <customControls:SamplingFrequencySelector x:Name="SamplingFrequencySelectorNonVbr" Grid.Row="1" Grid.Column="1" Margin="3" ValueChanged="SamplingFrequencySelectorNonVbr_ValueChanged"/>
                             <TextBlock Grid.Row="1" Grid.Column="2" Text="Hz" VerticalAlignment="Center" Margin="5,0,3,0"/>
                         </Grid>
 
@@ -149,15 +148,15 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Text="Bitrate value:" VerticalAlignment="Center" Margin="3,0,5,0"/>
-                            <userControls:BitrateSelectorVariable x:Name="BitrateSelectorVbr" Grid.Row="0" Grid.Column="1" Margin="3"/>
+                            <customControls:BitrateSelectorVariable x:Name="BitrateSelectorVbr" Grid.Row="0" Grid.Column="1" Margin="3"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="kbps" VerticalAlignment="Center" Margin="5,0,3,0"/>
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Sampling frequency:" VerticalAlignment="Center" Margin="3,0,5,0"/>
-                            <userControls:SamplingFrequencySelector x:Name="SamplingFrequencySelectorVbr" Grid.Row="1" Grid.Column="1" Margin="3"/>
+                            <customControls:SamplingFrequencySelector x:Name="SamplingFrequencySelectorVbr" Grid.Row="1" Grid.Column="1" Margin="3"/>
                             <TextBlock Grid.Row="1" Grid.Column="2" Text="Hz" VerticalAlignment="Center" Margin="5,0,3,0"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Quality:" VerticalAlignment="Center" Margin="3,0,5,0"/>
-                            <userControls:VbrQualitySlider x:Name="QualitySliderVbr" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                            <customControls:QualitySlider x:Name="QualitySliderVbr" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Maximum="9"/>
                         </Grid>
                     </Grid>
                 </TabItem>
@@ -192,7 +191,7 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Text="Extra command line arguments:" Margin="0,0,0,5"/>
-                        <TextBox x:Name="TextBoxExtraCmdArgs" Grid.Row="1" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Text="-q 0 --strictly-enforce-ISO --replaygain-accurate --id3v2-latin1"/>
+                        <TextBox x:Name="TextBoxExtraCmdArgs" Grid.Row="1" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
                     </Grid>
                 </TabItem>
             </TabControl>

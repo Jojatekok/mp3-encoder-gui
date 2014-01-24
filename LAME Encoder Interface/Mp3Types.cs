@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MP3EncoderGUI
+namespace LameEncoderInterface
 {
     [Flags]
-    public enum Mp3Types : byte
+    public enum Mp3Type
     {
         Mpeg10 = 1,
         Mpeg20 = 2,
@@ -14,23 +14,23 @@ namespace MP3EncoderGUI
     }
 }
 
-namespace MP3EncoderGUI.MP3Types
+namespace LameEncoderInterface.MP3Types
 {
     public static class Any
     {
-        public static IList<ushort> GetAvailableBitrates(Mp3Types mp3Types)
+        public static IList<ushort> GetAvailableBitrates(Mp3Type mp3Types)
         {
             var output = new HashSet<ushort>();
 
-            if (mp3Types.Contains(Mp3Types.Mpeg10)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg10)) {
                 output.UnionWith(Mpeg10.Bitrates);
             }
 
-            if (mp3Types.Contains(Mp3Types.Mpeg20)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg20)) {
                 output.UnionWith(Mpeg20.Bitrates);
             }
 
-            if (mp3Types.Contains(Mp3Types.Mpeg25)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg25)) {
                 output.UnionWith(Mpeg25.Bitrates);
             }
 
@@ -38,19 +38,19 @@ namespace MP3EncoderGUI.MP3Types
             return tmp.OrderByDescending(x => x).ToList();
         }
 
-        public static IList<ushort> GetAvailableSamplingFrequencies(Mp3Types mp3Types)
+        public static IList<ushort> GetAvailableSamplingFrequencies(Mp3Type mp3Types)
         {
             var output = new List<ushort> {0};
 
-            if (mp3Types.Contains(Mp3Types.Mpeg10)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg10)) {
                 output.AddRange(Mpeg10.SamplingFrequencies);
             }
 
-            if (mp3Types.Contains(Mp3Types.Mpeg20)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg20)) {
                 output.AddRange(Mpeg20.SamplingFrequencies);
             }
 
-            if (mp3Types.Contains(Mp3Types.Mpeg25)) {
+            if (mp3Types.Contains(Mp3Type.Mpeg25)) {
                 output.AddRange(Mpeg25.SamplingFrequencies);
             }
 

@@ -2,68 +2,111 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Windows;
 
-namespace MP3EncoderGUI
+namespace LameEncoderInterface
 {
     public sealed class LameProcess : IDisposable
     {
         #region Events
 
         public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
+        public event EventHandler InputFileRemovalFailed;
         public event EventHandler Disposed;
 
         #endregion
 
         #region Declarations
 
-        private static readonly string _lamePath = Helper.AppStartDirectory + @"lame\lame.exe";
-        public static string LamePath {
+        private readonly string _lamePath;
+        public string LamePath {
             get { return _lamePath; }
         }
 
+        private readonly string _inputFile;
+        public string InputFile {
+            get { return _inputFile; }
+        }
+
+        private readonly string _outputFile;
+        public string OutputFile {
+            get { return _outputFile; }
+        }
+
+        private readonly LameArguments _arguments;
+        public LameArguments Arguments {
+            get { return _arguments; }
+        }
+
+        private bool IsDisposed { get; set; }
         public bool IsRunning {
             get { return !IsDisposed && !_lameProc.HasExited; }
         }
 
-        private bool IsDisposed { get; set; }
-
-        private string OutputFile { get; set; }
-
-        private readonly Window _parentWindow;
         private readonly Process _lameProc;
 
         #endregion
 
         #region Methods
 
-        public LameProcess(Window parentWindow, string inputFile, string outputFile, string arguments)
+        public LameProcess(string lamePath, string inputFile, string outputFile, LameArguments arguments)
         {
-            _parentWindow = parentWindow;
-            OutputFile = outputFile;
+            FileInfo outputFileInfo;
+            try {
+                outputFileInfo = new FileInfo(outputFile);
+            } catch {
+                throw new UriFormatException(Messages.Errors.OutputFilePathInvalid);
+            }
+
+            if (!File.Exists(outputFileInfo.FullName)) {
+                outputFileInfo.Directory.Create();
+            }
+
+            _outputFile = outputFileInfo.FullName;
+
+            _lamePath = lamePath;
+            _inputFile = inputFile;
+            _arguments = arguments;
             
             _lameProc = new Process {
                 StartInfo = new ProcessStartInfo {
-                    FileName = LamePath,
+                    FileName = lamePath,
                     Arguments = arguments + " \"" + inputFile + "\" \"" + outputFile + "\"",
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     RedirectStandardError = true
                 }
             };
+            _lameProc.Disposed += LameProc_Disposed;
+        }
+
+        public LameProcess(string inputFile, string outputFile, LameArguments arguments) : this(Helper.DefaultLamePath, inputFile, outputFile, arguments)
+        {
+            
+        }
+
+        public LameProcess(string inputFile, string outputFile) : this(Helper.DefaultLamePath, inputFile, outputFile, null)
+        {
+
         }
 
         public void Start()
         {
-            try {
-                _lameProc.ErrorDataReceived += Lame_ErrorDataReceived;
-                _lameProc.Start();
-                _lameProc.BeginErrorReadLine();
-            } catch {
+            _lameProc.ErrorDataReceived += LameProc_ErrorDataReceived;
+
+            if (!File.Exists(LamePath)) {
                 IsDisposed = true;
                 _lameProc.Dispose();
                 throw new FileNotFoundException(Messages.Errors.LameEncoderNotFound, LamePath);
             }
+
+            if (!File.Exists(InputFile)) {
+                IsDisposed = true;
+                _lameProc.Dispose();
+                throw new FileNotFoundException(Messages.Errors.InputFileNotFound, InputFile);
+            }
+
+            _lameProc.Start();
+            _lameProc.BeginErrorReadLine();
         }
 
         public void Cancel()
@@ -73,7 +116,7 @@ namespace MP3EncoderGUI
             ThreadPool.QueueUserWorkItem(TryDeleteOutput);
         }
 
-        private void Lame_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        private void LameProc_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             var outputText = e.Data;
 
@@ -88,13 +131,18 @@ namespace MP3EncoderGUI
             }
         }
 
+        private void LameProc_Disposed(object sender, EventArgs e)
+        {
+            Dispose();
+        }
+
         private bool DeleteOutput()
         {
             if (!IsRunning || _lameProc.WaitForExit(3000)) {
-                try {
+                if (File.Exists(OutputFile)) {
                     File.Delete(OutputFile);
-                    return true; // Success
-                } catch { }
+                }
+                return true; // Success
             }
 
             return false; // Fail
@@ -102,20 +150,22 @@ namespace MP3EncoderGUI
 
         private void TryDeleteOutput(object sender)
         {
-            do {
-                if (DeleteOutput()) {
-                    Dispose();
-                    return;
-                }
-            } while (
-                Messages.ShowWarningByDispatcher(_parentWindow, Messages.Warnings.OutputFileIsNotRemovable, OutputFile) == MessageBoxResult.Yes
-            );
+            while (DeleteOutput()) {
+                Dispose();
+                return;
+            }
         }
 
         private void OnProgressChanged(ProgressChangedEventArgs e)
         {
             if (ProgressChanged != null)
                 ProgressChanged(this, e);
+        }
+
+        private void OnInputFileRemovalFailed()
+        {
+            if (InputFileRemovalFailed != null)
+                InputFileRemovalFailed(this, null);
         }
 
         private void OnDisposed()
@@ -138,7 +188,7 @@ namespace MP3EncoderGUI
             if (disposing && !IsDisposed) {
                 if (!_lameProc.HasExited) {
                     _lameProc.Kill();
-                    DeleteOutput();
+                    if (!DeleteOutput()) OnInputFileRemovalFailed();
                 }
 
                 IsDisposed = true;

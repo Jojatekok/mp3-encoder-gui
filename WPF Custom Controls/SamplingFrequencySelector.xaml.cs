@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using LameEncoderInterface;
 
-namespace MP3EncoderGUI.UserControls
+namespace WpfCustomControls
 {
     public sealed partial class SamplingFrequencySelector
     {
@@ -67,10 +68,9 @@ namespace MP3EncoderGUI.UserControls
             ComboBox1.SelectedIndex = 0;
             ComboBox1.ItemStringFormat = "## ###";
 
-            ValidValues = MP3Types.All.SamplingFrequencies;
+            ValidValues = LameEncoderInterface.MP3Types.All.SamplingFrequencies;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComboBox1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (ComboBox1.SelectedItem == null) {
@@ -96,28 +96,28 @@ namespace MP3EncoderGUI.UserControls
                 ValueChanged(this, e);
         }
 
-        public Mp3Types GetAvailableMp3Types()
+        public Mp3Type GetAvailableMp3Types()
         {
             if (Value == 0) {
-                return Mp3Types.All;
+                return Mp3Type.All;
             }
 
-            if (MP3Types.Mpeg10.SamplingFrequencies.Contains(Value)) {
-                return Mp3Types.Mpeg10;
+            if (LameEncoderInterface.MP3Types.Mpeg10.SamplingFrequencies.Contains(Value)) {
+                return Mp3Type.Mpeg10;
             }
 
-            if (MP3Types.Mpeg20.SamplingFrequencies.Contains(Value)) {
-                return Mp3Types.Mpeg20;
+            if (LameEncoderInterface.MP3Types.Mpeg20.SamplingFrequencies.Contains(Value)) {
+                return Mp3Type.Mpeg20;
             }
 
-            //if (MP3Types.Mpeg25.SamplingFrequencies.Contains(Value)) {
-            return Mp3Types.Mpeg25;
+            //if (LameEncoderInterface.MP3Types.Mpeg25.SamplingFrequencies.Contains(Value)) {
+            return Mp3Type.Mpeg25;
             //}
         }
 
-        public void UpdateValidValues(Mp3Types newMp3Types)
+        public void UpdateValidValues(Mp3Type newMp3Types)
         {
-            ValidValues = MP3Types.Any.GetAvailableSamplingFrequencies(newMp3Types);
+            ValidValues = LameEncoderInterface.MP3Types.Any.GetAvailableSamplingFrequencies(newMp3Types);
         }
 
         #endregion

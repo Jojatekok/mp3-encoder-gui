@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
+using LameEncoderInterface;
 
-namespace MP3EncoderGUI.UserControls
+namespace WpfCustomControls
 {
     public sealed partial class BitrateSelectorSimple
     {
@@ -50,11 +51,10 @@ namespace MP3EncoderGUI.UserControls
         {
             InitializeComponent();
 
-            ValidValues = MP3Types.All.Bitrates;
+            ValidValues = LameEncoderInterface.MP3Types.All.Bitrates;
             ComboBox1.SelectedIndex = 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComboBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ComboBox1.SelectedItem == null) {
@@ -73,29 +73,28 @@ namespace MP3EncoderGUI.UserControls
                 ValueChanged(this, e);
         }
 
-        public Mp3Types GetAvailableMp3Types()
+        public Mp3Type GetAvailableMp3Types()
         {
-            Mp3Types output = 0;
+            Mp3Type output = 0;
 
-            if (MP3Types.Mpeg10.Bitrates.Contains(Value)) {
-                output |= Mp3Types.Mpeg10;
+            if (LameEncoderInterface.MP3Types.Mpeg10.Bitrates.Contains(Value)) {
+                output |= Mp3Type.Mpeg10;
             }
 
-            if (MP3Types.Mpeg20.Bitrates.Contains(Value)) {
-                output |= Mp3Types.Mpeg20;
+            if (LameEncoderInterface.MP3Types.Mpeg20.Bitrates.Contains(Value)) {
+                output |= Mp3Type.Mpeg20;
             }
 
-            if (MP3Types.Mpeg25.Bitrates.Contains(Value)) {
-                output |= Mp3Types.Mpeg25;
+            if (LameEncoderInterface.MP3Types.Mpeg25.Bitrates.Contains(Value)) {
+                output |= Mp3Type.Mpeg25;
             }
 
             return output;
         }
 
-        public void UpdateValidValues(Mp3Types newMp3Types)
+        public void UpdateValidValues(Mp3Type newMp3Types)
         {
-            var tmp = MP3Types.Any.GetAvailableBitrates(newMp3Types);
-            ValidValues = tmp;
+            ValidValues = LameEncoderInterface.MP3Types.Any.GetAvailableBitrates(newMp3Types);
         }
 
         #endregion

@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MP3 Encoder GUI", "MP3 Encoder GUI\MP3 Encoder GUI.csproj", "{E536E62F-0AC8-443E-B985-E3C7001BA806}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LAME Encoder Interface", "LAME Encoder Interface\LAME Encoder Interface.csproj", "{5956C847-B051-4922-84D6-A1A009D6D21C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPF Custom Controls", "WPF Custom Controls\WPF Custom Controls.csproj", "{042769F9-50CE-4E18-A252-653B6C5321B8}"
 EndProject
@@ -17,6 +19,10 @@ Global
 		{E536E62F-0AC8-443E-B985-E3C7001BA806}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E536E62F-0AC8-443E-B985-E3C7001BA806}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E536E62F-0AC8-443E-B985-E3C7001BA806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5956C847-B051-4922-84D6-A1A009D6D21C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5956C847-B051-4922-84D6-A1A009D6D21C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5956C847-B051-4922-84D6-A1A009D6D21C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5956C847-B051-4922-84D6-A1A009D6D21C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{042769F9-50CE-4E18-A252-653B6C5321B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{042769F9-50CE-4E18-A252-653B6C5321B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{042769F9-50CE-4E18-A252-653B6C5321B8}.Release|Any CPU.ActiveCfg = Release|Any CPU

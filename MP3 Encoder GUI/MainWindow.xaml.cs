@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Windows.Media;
+﻿using LameEncoderInterface;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -14,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using WpfCustomControls;
 
 namespace MP3EncoderGUI
 {
@@ -92,7 +92,7 @@ namespace MP3EncoderGUI
             // Do not check for updates
             ProgressBarEncoding_ResetText();
 #else
-            if (IsConnectedToInternet()) {
+            if (Helper.IsConnectedToInternet()) {
                 ThreadPool.QueueUserWorkItem(CheckForUpdates);
             } else {
                 ProgressBarEncoding_ResetText();
@@ -121,12 +121,6 @@ namespace MP3EncoderGUI
         #endregion
 
         #region Check for updates
-
-        private static bool IsConnectedToInternet()
-        {
-            int tmp;
-            return NativeMethods.InternetGetConnectedState(out tmp, 0);
-        }
 
         private void CheckForUpdates(object sender)
         {
@@ -254,6 +248,8 @@ namespace MP3EncoderGUI
 
         #region Encoding options
 
+        #region General
+
         private void NumberBoxTrack1_ValueChanged(object sender, WpfCustomControls.NuintValueChangedEventArgs e)
         {
             if (e.NewValue != null) {
@@ -264,6 +260,53 @@ namespace MP3EncoderGUI
                 NumberBoxTrack2.Clear();
             }
         }
+
+        #endregion
+
+        #region Quality
+
+        private void RadioButtonBitrateNonVbr_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsInitialized) return;
+
+            if (Equals(sender, RadioButtonBitrateConstant)) {
+                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
+
+            } else {
+                BitrateSelectorNonVbr.UpdateValidValues(Mp3Type.All);
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(Mp3Type.All);
+            }
+
+            GridQualityOptionsNonVbr.Visibility = Visibility.Visible;
+            GridQualityOptionsVbr.Visibility = Visibility.Hidden;
+        }
+
+        private void RadioButtonBitrateVbr_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!IsInitialized) return;
+
+            GridQualityOptionsVbr.Visibility = Visibility.Visible;
+            GridQualityOptionsNonVbr.Visibility = Visibility.Hidden;
+        }
+
+        private void BitrateSelectorNonVbr_ValueChanged(object sender, UshortValueChangedEventArgs e)
+        {
+            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
+            }
+        }
+
+        private void SamplingFrequencySelectorNonVbr_ValueChanged(object sender, UshortValueChangedEventArgs e)
+        {
+            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
+                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
+            }
+        }
+
+        #endregion
+
+        #region Cover art
 
         private void ButtonChangeCoverArt_Click(object sender, RoutedEventArgs e)
         {
@@ -321,6 +364,8 @@ namespace MP3EncoderGUI
 
         #endregion
 
+        #endregion
+
         #region Start/stop encoding
 
         private void ButtonStart_Click(object sender, RoutedEventArgs e)
@@ -328,48 +373,29 @@ namespace MP3EncoderGUI
             LockOptionControls(true);
 
             var inputFile = TextBoxInputFile.Text;
+            var outputFile = TextBoxOutputFile.Text;
 
-            if (inputFile.Length == 0 || !File.Exists(inputFile)) {
-                Messages.ShowError(this, Messages.Errors.InputFileNotFound);
-                return;
-            }
-
-            // Lock the found input file (so it cannot be modified or removed)
-            using (new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.Read, 1)) {
-                if (!File.Exists(LameProcess.LamePath)) {
-                    Messages.ShowError(this, Messages.Errors.LameEncoderNotFound);
+            // Check whether the output file already exists
+            if (File.Exists(outputFile)) {
+                if (Messages.ShowWarning(this, Messages.Warnings.OutputFileAlreadyExists) == MessageBoxResult.No) {
+                    ButtonStart.Visibility = Visibility.Visible;
+                    GridProgress.Visibility = Visibility.Hidden;
                     return;
                 }
+            }
 
-                // Lock the found LAME encoder (so it cannot be modified or removed)
-                using (new FileStream(LameProcess.LamePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1)) {
-                    FileInfo outputFileInfo;
-                    try {
-                        outputFileInfo = new FileInfo(TextBoxOutputFile.Text);
-                    } catch {
-                        Messages.ShowError(this, Messages.Errors.OutputFilePathInvalid);
-                        return;
-                    }
+            // Dispose the previous LAME process if necessary
+            if (_lameProc != null) { _lameProc.Dispose(); }
 
-                    // Check whether the output file already exists
-                    if (File.Exists(outputFileInfo.FullName)) {
-                        if (Messages.ShowWarning(this, Messages.Warnings.OutputFileAlreadyExists) == MessageBoxResult.No) {
-                            ButtonStart.Visibility = Visibility.Visible;
-                            GridProgress.Visibility = Visibility.Hidden;
-                            return;
-                        }
-                    } else {
-                        outputFileInfo.Directory.Create();
-                    }
+            _lameProc = new LameProcess(inputFile, outputFile, Helper.GetEncodingParams(this));
+            _lameProc.ProgressChanged += LameProc_ProgressChanged;
+            _lameProc.Disposed += LameProc_Disposed;
 
-                    // Dispose the previous LAME process if necessary
-                    if (_lameProc != null) { _lameProc.Dispose(); }
+            try {
+                _lameProc.Start();
 
-                    _lameProc = new LameProcess(this, inputFile, outputFileInfo.FullName, Helper.GetEncodingParams(this));
-                    _lameProc.ProgressChanged += LameProc_ProgressChanged;
-                    _lameProc.Disposed += LameProc_Disposed;
-                    _lameProc.Start();
-                }
+            } catch (Exception ex) {
+                Messages.ShowError(this, ex.Message);
             }
         }
 
@@ -446,7 +472,7 @@ namespace MP3EncoderGUI
             }
         }
 
-        private void LameProc_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void LameProc_ProgressChanged(object sender, LameEncoderInterface.ProgressChangedEventArgs e)
         {
             _syncContext.Send(_ => {
                 TaskbarItemInfo.ProgressValue = (double)e.NewValue / e.Maximum;
@@ -494,44 +520,5 @@ namespace MP3EncoderGUI
         }
 
         #endregion
-
-        private void RadioButtonBitrateNonVbr_Checked(object sender, RoutedEventArgs e)
-        {
-            if (!IsInitialized) return;
-
-            if (Equals(sender, RadioButtonBitrateConstant)) {
-                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
-                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
-
-            } else {
-                BitrateSelectorNonVbr.UpdateValidValues(Mp3Types.All);
-                SamplingFrequencySelectorNonVbr.UpdateValidValues(Mp3Types.All);
-            }
-
-            GridQualityOptionsNonVbr.Visibility = Visibility.Visible;
-            GridQualityOptionsVbr.Visibility = Visibility.Hidden;
-        }
-
-        private void RadioButtonBitrateVbr_Checked(object sender, RoutedEventArgs e)
-        {
-            if (!IsInitialized) return;
-
-            GridQualityOptionsVbr.Visibility = Visibility.Visible;
-            GridQualityOptionsNonVbr.Visibility = Visibility.Hidden;
-        }
-
-        private void QualityOptionsNonVbrBitrate_ValueChanged(object sender, UshortValueChangedEventArgs e)
-        {
-            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
-                SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
-            }
-        }
-
-        private void QualityOptionsNonVbrSamplingFrequency_ValueChanged(object sender, UshortValueChangedEventArgs e)
-        {
-            if (RadioButtonBitrateConstant.IsChecked != null && RadioButtonBitrateConstant.IsChecked.Value) {
-                BitrateSelectorNonVbr.UpdateValidValues(SamplingFrequencySelectorNonVbr.GetAvailableMp3Types());
-            }
-        }
     }
 }

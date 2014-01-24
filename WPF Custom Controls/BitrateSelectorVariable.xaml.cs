@@ -2,13 +2,13 @@
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
-namespace MP3EncoderGUI.UserControls
+namespace WpfCustomControls
 {
     public sealed partial class BitrateSelectorVariable
     {
         #region Declarations
 
-        private static readonly List<ushort> ValidValues = (List<ushort>)MP3Types.All.Bitrates;
+        private static readonly List<ushort> ValidValues = (List<ushort>)LameEncoderInterface.MP3Types.All.Bitrates;
 
         private ushort _minValue;
         public ushort MinValue
@@ -52,14 +52,12 @@ namespace MP3EncoderGUI.UserControls
             ComboBoxMaximum.SelectedIndex = 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComboBoxMinimum_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _minValue = (ushort)ComboBoxMinimum.SelectedItem;
             DisplayMaxValues(MinValue);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComboBoxMaximum_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             _maxValue = (ushort)ComboBoxMaximum.SelectedItem;

@@ -108,22 +108,6 @@ namespace MP3EncoderGUI
             public static string UpdateCheckFailed {
                 get { return _updateCheckFailed; }
             }
-
-            private const string _inputFileNotFound = "The input file does not exist.";
-            public static string InputFileNotFound {
-                get { return _inputFileNotFound; }
-            }
-
-            private const string _outputFilePathInvalid = "The output file's path is invalid.";
-            public static string OutputFilePathInvalid {
-                get { return _outputFilePathInvalid; }
-            }
-
-            private static readonly string _lameEncoderNotFound = "The LAME encoder was not found at \"" + LameProcess.LamePath + "\"." + Environment.NewLine +
-                "Please download it, and then try again.";
-            public static string LameEncoderNotFound {
-                get { return _lameEncoderNotFound; }
-            }
         }
 
         internal static class Warnings

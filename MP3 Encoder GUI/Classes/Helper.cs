@@ -1,11 +1,18 @@
-﻿using Microsoft.Win32;
+﻿using LameEncoderInterface;
+using LameEncoderInterface.OptionAdditions;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MP3EncoderGUI
 {
@@ -15,11 +22,13 @@ namespace MP3EncoderGUI
 
         private static readonly string _appStartDirectory = AppDomain.CurrentDomain.BaseDirectory;
         internal static string AppStartDirectory {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _appStartDirectory; }
         }
 
         private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         internal static CultureInfo InvariantCulture {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _invariantCulture; }
         }
 
@@ -29,85 +38,78 @@ namespace MP3EncoderGUI
 
         internal static bool IsNetFramework45Installed()
         {
-            using (var ndpKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\")) {
-                return ndpKey != null && (int)ndpKey.GetValue("Release") >= 378389;
+            using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)) {
+                using (var ndpKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\")) {
+                    return ndpKey != null && (int)ndpKey.GetValue("Release") >= 378389;
+                }
             }
         }
 
-        internal static string GetEncodingParams(MainWindow window)
+        internal static bool IsConnectedToInternet()
         {
-            var output = string.Empty;
+            int tmp;
+            return NativeMethods.InternetGetConnectedState(out tmp, 0);
+        }
 
-            // [ID3] Title
-            if (window.TextBoxTitle.Text.Length != 0) {
-                output += " --tt \"" + window.TextBoxTitle.Text + "\"";
-            }
-
-            // [ID3] Artist
-            if (window.TextBoxArtist.Text.Length != 0) {
-                output += " --ta \"" + window.TextBoxArtist.Text + "\"";
-            }
-
-            // [ID3] Album
-            if (window.TextBoxAlbum.Text.Length != 0) {
-                output += " --tl \"" + window.TextBoxAlbum.Text + "\"";
-            }
-
-            // [ID3] Genre
-            if (window.ComboBoxGenre.Text.Length != 0) {
-                byte genreId;
-                if (Dictionaries.MusicGenres.TryGetValue(window.ComboBoxGenre.Text, out genreId)) {
-                    output += " --tg " + genreId;
-                } else {
-                    output += " --tg \"" + window.ComboBoxGenre.Text + "\"";
+        internal static LameArguments GetEncodingParams(MainWindow window)
+        {
+            // [ID3 tags]
+            var output = new LameArguments {
+                Id3Tags = {
+                    Title = window.TextBoxTitle.Text,
+                    Artist = window.TextBoxArtist.Text,
+                    Album = window.TextBoxAlbum.Text,
+                    CoverArtPath = window.CoverArtPath,
+                    Comment = window.TextBoxComment.Text
                 }
-            }
+            };
 
-            // [ID3] Year
             if (window.NumericUpDownYear.Value != null) {
-                output += " --ty " + window.NumericUpDownYear.Value;
+                output.Id3Tags.Year = (ushort)window.NumericUpDownYear.Value;
             }
 
-            // [ID3] Track
+            var genreText = window.ComboBoxGenre.Text;
+            if (genreText.Length != 0) {
+                byte genreId;
+                output.Id3Tags.Genre = Dictionaries.MusicGenres.TryGetValue(genreText, out genreId) ?
+                                       new Id3Tags.Genre(genreId) :
+                                       new Id3Tags.Genre(genreText);
+            }
+
             if (window.NumberBoxTrack1.Value != null) {
-                output += " --tn " + window.NumberBoxTrack1.Value;
+                output.Id3Tags.TrackNumber = (byte)window.NumberBoxTrack1.Value;
                 if (window.NumberBoxTrack2.Value != null) {
-                    output += "/" + window.NumberBoxTrack2.Value;
+                    output.Id3Tags.TrackTotal = (byte)window.NumberBoxTrack2.Value;
                 }
             }
 
-            // [ID3] Comment
-            if (window.TextBoxComment.Text.Length != 0) {
-                output += " --tc \"" + window.TextBoxComment.Text + "\"";
-            }
+            // [Quality options]
+            var isVbr = false;
 
-            // [ID3] Cover art
-            if (window.CoverArtPath != null) {
-                output += " --ti \"" + window.CoverArtPath + "\"";
-            }
-
-            // Quality options
             if (window.RadioButtonBitrateConstant.IsChecked != null && window.RadioButtonBitrateConstant.IsChecked.Value) {
-                output += " --cbr -b " + window.BitrateSelectorNonVbr.Value;
+                output.QualityOptions.CbrOptions = new Quality.ConstantBitrate(window.BitrateSelectorNonVbr.Value);
 
             } else if (window.RadioButtonBitrateAverage.IsChecked != null && window.RadioButtonBitrateAverage.IsChecked.Value) {
-                output += " --abr " + window.BitrateSelectorNonVbr.Value;
+                output.QualityOptions.AbrOptions = new Quality.AverageBitrate(window.BitrateSelectorNonVbr.Value);
 
             } else if (window.RadioButtonBitrateVariable.IsChecked != null && window.RadioButtonBitrateVariable.IsChecked.Value) {
-                output += " -F -b " + window.BitrateSelectorVbr.MinValue +
-                          " -B " + window.BitrateSelectorVbr.MaxValue +
-                          " -V " + window.QualitySliderVbr.Value;
+                output.QualityOptions.VbrOptions = new Quality.VariableBitrate(window.QualitySliderVbr.Value,
+                                                                               window.BitrateSelectorVbr.MinValue,
+                                                                               window.BitrateSelectorVbr.MaxValue);
+                isVbr = true;
             }
 
-            var tmp = window.SamplingFrequencySelectorNonVbr.Value;
-            if (tmp != 0) {
-                output += " --resample " + ((float)tmp / 1000).ToString("0.0");
+            // [Filters]
+            var samplingFrequency = isVbr ?
+                                    window.SamplingFrequencySelectorVbr.Value :
+                                    window.SamplingFrequencySelectorNonVbr.Value;
+
+            if (samplingFrequency != 0) {
+                output.Filters.Resample = samplingFrequency / 1000F;
             }
 
-            // Extra command line arguments
-            if (window.TextBoxExtraCmdArgs.Text.Length != 0) {
-                output += " " + window.TextBoxExtraCmdArgs.Text;
-            }
+            // [Extra command line arguments]
+            output.ExtraArguments = window.TextBoxExtraCmdArgs.Text;
 
             return output;
         }
@@ -153,20 +155,37 @@ namespace MP3EncoderGUI
         #endregion
     }
 
+    internal static class IconExtension
+    {
+        public static ImageSource ToImageSource(this Icon icon)
+        {
+            using (var bitmap = icon.ToBitmap()) {
+                var hBitmap = bitmap.GetHbitmap();
+
+                ImageSource wpfBitmap = Imaging.CreateBitmapSourceFromHBitmap(
+                    hBitmap,
+                    IntPtr.Zero,
+                    Int32Rect.Empty,
+                    BitmapSizeOptions.FromEmptyOptions()
+                );
+
+                if (!NativeMethods.DeleteObject(hBitmap)) {
+                    throw new Win32Exception();
+                }
+
+                return wpfBitmap;
+            }
+        }
+    }
+
     internal static class NativeMethods
     {
         [DllImport("wininet.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal extern static bool InternetGetConnectedState(out int description, int reservedValue);
-    }
 
-    public class UshortValueChangedEventArgs : EventArgs
-    {
-        public ushort NewValue { get; private set; }
-
-        public UshortValueChangedEventArgs(ushort newValue)
-        {
-            NewValue = newValue;
-        }
+        [DllImport("gdi32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal extern static bool DeleteObject(IntPtr hObject);
     }
 }

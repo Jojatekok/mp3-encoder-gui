@@ -54,6 +54,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Lame Encoder Interface\LAME Encoder Interface.csproj">
+      <Project>{5956c847-b051-4922-84d6-a1a009d6d21c}</Project>
+      <Name>LAME Encoder Interface</Name>
+    </ProjectReference>
     <ProjectReference Include="..\WPF Custom Controls\WPF Custom Controls.csproj">
       <Project>{042769f9-50ce-4e18-a252-653b6c5321b8}</Project>
       <Name>WPF Custom Controls</Name>
@@ -64,20 +68,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Classes\Extensions.cs" />
-    <Compile Include="Classes\Mp3Types.cs" />
-    <Compile Include="User controls\BitrateSelectorSimple.xaml.cs">
-      <DependentUpon>BitrateSelectorSimple.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="User controls\BitrateSelectorVariable.xaml.cs">
-      <DependentUpon>BitrateSelectorVariable.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="User controls\SamplingFrequencySelector.xaml.cs">
-      <DependentUpon>SamplingFrequencySelector.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="User controls\VbrQualitySlider.xaml.cs">
-      <DependentUpon>VbrQualitySlider.xaml</DependentUpon>
-    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -87,25 +77,8 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Helper.cs" />
-    <Compile Include="Classes\LameProcess.cs" />
     <Compile Include="Classes\Messages.cs" />
     <Compile Include="Classes\Dictionaries.cs" />
-    <Page Include="User controls\BitrateSelectorSimple.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="User controls\BitrateSelectorVariable.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="User controls\SamplingFrequencySelector.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="User controls\VbrQualitySlider.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <AppDesigner Include="Properties\" />
