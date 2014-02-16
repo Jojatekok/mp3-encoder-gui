@@ -1,5 +1,6 @@
 ﻿using LameEncoderInterface;
-using LameEncoderInterface.OptionAdditions;
+using LameEncoderInterface.OptionAdditions.Id3Arguments;
+using LameEncoderInterface.OptionAdditions.QualityArguments;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -22,13 +23,11 @@ namespace MP3EncoderGUI
 
         private static readonly string _appStartDirectory = AppDomain.CurrentDomain.BaseDirectory;
         internal static string AppStartDirectory {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _appStartDirectory; }
         }
 
         private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         internal static CultureInfo InvariantCulture {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _invariantCulture; }
         }
 
@@ -72,8 +71,8 @@ namespace MP3EncoderGUI
             if (genreText.Length != 0) {
                 byte genreId;
                 output.Id3Tags.Genre = Dictionaries.MusicGenres.TryGetValue(genreText, out genreId) ?
-                                       new Id3Tags.Genre(genreId) :
-                                       new Id3Tags.Genre(genreText);
+                                       new Genre(genreId) :
+                                       new Genre(genreText);
             }
 
             if (window.NumberBoxTrack1.Value != null) {
@@ -87,15 +86,15 @@ namespace MP3EncoderGUI
             var isVbr = false;
 
             if (window.RadioButtonBitrateConstant.IsChecked != null && window.RadioButtonBitrateConstant.IsChecked.Value) {
-                output.QualityOptions.CbrOptions = new Quality.ConstantBitrate(window.BitrateSelectorNonVbr.Value);
+                output.QualityOptions.CbrOptions = new ConstantBitrate(window.BitrateSelectorNonVbr.Value);
 
             } else if (window.RadioButtonBitrateAverage.IsChecked != null && window.RadioButtonBitrateAverage.IsChecked.Value) {
-                output.QualityOptions.AbrOptions = new Quality.AverageBitrate(window.BitrateSelectorNonVbr.Value);
+                output.QualityOptions.AbrOptions = new AverageBitrate(window.BitrateSelectorNonVbr.Value);
 
             } else if (window.RadioButtonBitrateVariable.IsChecked != null && window.RadioButtonBitrateVariable.IsChecked.Value) {
-                output.QualityOptions.VbrOptions = new Quality.VariableBitrate(window.QualitySliderVbr.Value,
-                                                                               window.BitrateSelectorVbr.MinValue,
-                                                                               window.BitrateSelectorVbr.MaxValue);
+                output.QualityOptions.VbrOptions = new VariableBitrate(window.QualitySliderVbr.Value,
+                                                                       window.BitrateSelectorVbr.MinValue,
+                                                                       window.BitrateSelectorVbr.MaxValue);
                 isVbr = true;
             }
 

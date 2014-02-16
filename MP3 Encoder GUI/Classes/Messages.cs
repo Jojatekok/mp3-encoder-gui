@@ -51,17 +51,17 @@ namespace MP3EncoderGUI
             return ShowWarning(window, new[] { Errors.DefaultTitle, warningMessage }, arguments);
         }
 
-        internal static MessageBoxResult ShowWarningByDispatcher(Window window, IList<string> warning, params string[] arguments)
-        {
-            return window.Dispatcher.Invoke(() =>
-                ShowWarning(window, warning, arguments)
-            );
-        }
+        //internal static MessageBoxResult ShowWarningByDispatcher(Window window, IList<string> warning, params string[] arguments)
+        //{
+        //    return window.Dispatcher.Invoke(() =>
+        //        ShowWarning(window, warning, arguments)
+        //    );
+        //}
 
-        internal static MessageBoxResult ShowWarningByDispatcher(Window window, string warningMessage, params string[] arguments)
-        {
-            return ShowWarningByDispatcher(window, new[] { Warnings.DefaultTitle, warningMessage }, arguments);
-        }
+        //internal static MessageBoxResult ShowWarningByDispatcher(Window window, string warningMessage, params string[] arguments)
+        //{
+        //    return ShowWarningByDispatcher(window, new[] { Warnings.DefaultTitle, warningMessage }, arguments);
+        //}
 
         #endregion
 

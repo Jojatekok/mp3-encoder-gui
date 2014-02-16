@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using LameEncoderInterface.OptionAdditions;
+using System.Runtime.CompilerServices;
 
 namespace LameEncoderInterface
 {
@@ -47,109 +47,7 @@ namespace LameEncoderInterface
 
         public override string ToString()
         {
-            var output = string.Empty;
-
-            // [Operational options]
-            switch (OperationalOptions.ReplayGain) {
-                case Operational.ReplayGainMode.Accurate:
-                    output += "--replaygain-accurate ";
-                    break;
-
-                case Operational.ReplayGainMode.Fast:
-                    output += "--replaygain-fast ";
-                    break;
-
-                case Operational.ReplayGainMode.Disabled:
-                    output += "--noreplaygain ";
-                    break;
-            }
-
-            // [Quality options]
-            if (QualityOptions.CbrOptions != null) {
-                output += "--cbr -b " + QualityOptions.CbrOptions.Bitrate + " ";
-
-            } else if (QualityOptions.AbrOptions != null) {
-                output += "--abr " + QualityOptions.AbrOptions.Bitrate + " ";
-
-            } else if (QualityOptions.VbrOptions != null) {
-                output += "-V " + QualityOptions.VbrOptions.Quality +
-                         " -b " + QualityOptions.VbrOptions.MinimumBitrate +
-                         " -B " + QualityOptions.VbrOptions.MaximumBitrate + " ";
-
-                if (QualityOptions.VbrOptions.IsMinimumBitrateArgumentEnforced) {
-                    output += "-F ";
-                }
-            }
-
-            output += "-q " + QualityOptions.NoiseShapingQuality + " ";
-
-            // [Filters]
-            if (Filters.LowpassFrequency != null) {
-                output += "--lowpass " + Filters.LowpassFrequency.Value.ToString("0.0", Helper.InvariantCulture) + " ";
-            }
-            if (Filters.LowpassWidth != null) {
-                output += "--lowpass-width " + Filters.LowpassWidth.Value.ToString("0.0", Helper.InvariantCulture) + " ";
-            }
-
-            if (Filters.HighpassFrequency != null) {
-                output += "--highpass " + Filters.HighpassFrequency.Value.ToString("0.0", Helper.InvariantCulture) + " ";
-            }
-            if (Filters.HighpassWidth != null) {
-                output += "--highpass-width " + Filters.HighpassWidth.Value.ToString("0.0", Helper.InvariantCulture) + " ";
-            }
-
-            if (Filters.Resample != null) {
-                output += "--resample " + Filters.Resample.Value.ToString("0.0", Helper.InvariantCulture) + " ";
-            }
-
-            // [Header options]
-            if (HeaderOptions.IsIsoStrictlyEnforced) {
-                output += "--strictly-enforce-ISO ";
-            }
-
-            if (HeaderOptions.IsCopyrighted) output += "-c ";
-            if (HeaderOptions.IsNonOriginal) output += "-o ";
-
-            // [ID3 tags]
-            if (!string.IsNullOrWhiteSpace(Id3Tags.Title)) output += "--tt \"" + Id3Tags.Title + "\" ";
-            if (!string.IsNullOrWhiteSpace(Id3Tags.Artist)) output += "--ta \"" + Id3Tags.Artist + "\" ";
-            if (!string.IsNullOrWhiteSpace(Id3Tags.Album)) output += "--tl \"" + Id3Tags.Album + "\" ";
-            if (!string.IsNullOrWhiteSpace(Id3Tags.CoverArtPath)) output += "--ti \"" + Id3Tags.CoverArtPath + "\" ";
-            if (!string.IsNullOrWhiteSpace(Id3Tags.Comment)) output += "--tc \"" + Id3Tags.Comment + "\" ";
-            if (Id3Tags.Year != 0) output += "--ty " + Id3Tags.Year + " ";
-
-            if (Id3Tags.Genre != null) {
-                if (Id3Tags.Genre.Id != null) {
-                    output += "--tg " + Id3Tags.Genre.Id.Value + " ";
-                } else if (!string.IsNullOrWhiteSpace(Id3Tags.Genre.Name)) {
-                    output += "--tg \"" + Id3Tags.Genre.Name + "\" ";
-                }
-            }
-
-            if (Id3Tags.TrackNumber != 0) {
-                output += "--tn " + Id3Tags.TrackNumber;
-                if (Id3Tags.TrackTotal != 0) output += "/" + Id3Tags.TrackTotal;
-                output += " ";
-            }
-
-            switch (Id3Tags.Encoding) {
-                case OptionAdditions.Id3Tags.Encoding.Latin1:
-                    output += "--id3v2-latin1 ";
-                    break;
-
-                case OptionAdditions.Id3Tags.Encoding.Utf16:
-                    output += "--id3v2-utf16 ";
-                    break;
-            }
-
-            if (Id3Tags.ExtraTags.Count != 0) {
-                for (var i = Id3Tags.ExtraTags.Count - 1; i >= 0; i--) {
-                    var tmp = Id3Tags.ExtraTags[i];
-                    if (tmp != null) {
-                        output += "--tv " + tmp.Id + "=" + tmp.Value + " ";
-                    }
-                }
-            }
+            var output = OperationalOptions.ToString() + QualityOptions + Filters + HeaderOptions + Id3Tags;
 
             // [Extra command line arguments]
             if (!string.IsNullOrWhiteSpace(ExtraArguments)) {
@@ -179,20 +77,58 @@ namespace LameEncoderInterface.Options
 
     public sealed class Operational
     {
-        public OptionAdditions.Operational.ReplayGainMode ReplayGain { get; set; }
+        public OptionAdditions.OperationalArguments.ReplayGainMode ReplayGain { get; set; }
+
+        public override string ToString()
+        {
+            switch (ReplayGain) {
+                case OptionAdditions.OperationalArguments.ReplayGainMode.Accurate:
+                    return "--replaygain-accurate ";
+
+                case OptionAdditions.OperationalArguments.ReplayGainMode.Fast:
+                    return "--replaygain-fast ";
+            }
+
+            return "--noreplaygain ";
+        }
     }
 
     public sealed class Quality
     {
-        public OptionAdditions.Quality.ConstantBitrate CbrOptions { get; set; }
-        public OptionAdditions.Quality.AverageBitrate AbrOptions { get; set; }
-        public OptionAdditions.Quality.VariableBitrate VbrOptions { get; set; }
+        public OptionAdditions.QualityArguments.ConstantBitrate CbrOptions { get; set; }
+        public OptionAdditions.QualityArguments.AverageBitrate AbrOptions { get; set; }
+        public OptionAdditions.QualityArguments.VariableBitrate VbrOptions { get; set; }
 
         private byte _noiseShapingQuality;
         public byte NoiseShapingQuality
         {
             get { return _noiseShapingQuality; }
             set { if (value <= 9) _noiseShapingQuality = value; }
+        }
+
+        public override string ToString()
+        {
+            var output = string.Empty;
+
+            if (CbrOptions != null) {
+                output += "--cbr -b " + CbrOptions.Bitrate + " ";
+
+            } else if (AbrOptions != null) {
+                output += "--abr " + AbrOptions.Bitrate + " ";
+
+            } else if (VbrOptions != null) {
+                output += "-V " + VbrOptions.Quality +
+                         " -b " + VbrOptions.MinimumBitrate +
+                         " -B " + VbrOptions.MaximumBitrate + " ";
+
+                if (VbrOptions.IsMinimumBitrateArgumentEnforced) {
+                    output += "-F ";
+                }
+            }
+
+            output += "-q " + NoiseShapingQuality + " ";
+
+            return output;
         }
     }
 
@@ -205,6 +141,26 @@ namespace LameEncoderInterface.Options
         public float? HighpassWidth { get; set; }
 
         public float? Resample { get; set; }
+
+        public override string ToString()
+        {
+            var output = string.Empty;
+
+            if (LowpassFrequency != null)
+                output += "--lowpass " + LowpassFrequency.Value.ToString("0.0", Helper.InvariantCulture) + " ";
+            if (LowpassWidth != null)
+                output += "--lowpass-width " + LowpassWidth.Value.ToString("0.0", Helper.InvariantCulture) + " ";
+
+            if (HighpassFrequency != null)
+                output += "--highpass " + HighpassFrequency.Value.ToString("0.0", Helper.InvariantCulture) + " ";
+            if (HighpassWidth != null)
+                output += "--highpass-width " + HighpassWidth.Value.ToString("0.0", Helper.InvariantCulture) + " ";
+
+            if (Resample != null)
+                output += "--resample " + Resample.Value.ToString("0.0", Helper.InvariantCulture) + " ";
+
+            return output;
+        }
     }
 
     public sealed class Header
@@ -218,6 +174,19 @@ namespace LameEncoderInterface.Options
         {
             IsIsoStrictlyEnforced = true;
         }
+
+        public override string ToString()
+        {
+            var output = string.Empty;
+
+            if (IsIsoStrictlyEnforced)
+                output += "--strictly-enforce-ISO ";
+
+            if (IsCopyrighted) output += "-c ";
+            if (IsNonOriginal) output += "-o ";
+
+            return output;
+        }
     }
 
     public sealed class Id3Tags
@@ -225,7 +194,7 @@ namespace LameEncoderInterface.Options
         public string Title { get; set; }
         public string Artist { get; set; }
         public string Album { get; set; }
-        public OptionAdditions.Id3Tags.Genre Genre { get; set; }
+        public OptionAdditions.Id3Arguments.Genre Genre { get; set; }
         public string CoverArtPath { get; set; }
         public string Comment { get; set; }
 
@@ -238,11 +207,58 @@ namespace LameEncoderInterface.Options
         public byte TrackNumber { get; set; }
         public byte TrackTotal { get; set; }
 
-        public OptionAdditions.Id3Tags.Encoding Encoding { get; set; }
+        public OptionAdditions.Id3Arguments.Encoding Encoding { get; set; }
 
-        private readonly IList<OptionAdditions.Id3Tags.ExtraTag> _extraTags = new List<OptionAdditions.Id3Tags.ExtraTag>();
-        public IList<OptionAdditions.Id3Tags.ExtraTag> ExtraTags {
+        private readonly IList<OptionAdditions.Id3Arguments.ExtraTag> _extraTags = new List<OptionAdditions.Id3Arguments.ExtraTag>();
+        public IList<OptionAdditions.Id3Arguments.ExtraTag> ExtraTags {
             get { return _extraTags; }
+        }
+
+        public override string ToString()
+        {
+            var output = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(Title)) output += "--tt \"" + Title + "\" ";
+            if (!string.IsNullOrWhiteSpace(Artist)) output += "--ta \"" + Artist + "\" ";
+            if (!string.IsNullOrWhiteSpace(Album)) output += "--tl \"" + Album + "\" ";
+            if (!string.IsNullOrWhiteSpace(CoverArtPath)) output += "--ti \"" + CoverArtPath + "\" ";
+            if (!string.IsNullOrWhiteSpace(Comment)) output += "--tc \"" + Comment + "\" ";
+            if (Year != 0) output += "--ty " + Year + " ";
+
+            if (Genre != null) {
+                if (Genre.Id != null) {
+                    output += "--tg " + Genre.Id.Value + " ";
+                } else if (!string.IsNullOrWhiteSpace(Genre.Name)) {
+                    output += "--tg \"" + Genre.Name + "\" ";
+                }
+            }
+
+            if (TrackNumber != 0) {
+                output += "--tn " + TrackNumber;
+                if (TrackTotal != 0) output += "/" + TrackTotal;
+                output += " ";
+            }
+
+            switch (Encoding) {
+                case OptionAdditions.Id3Arguments.Encoding.Latin1:
+                    output += "--id3v2-latin1 ";
+                    break;
+
+                case OptionAdditions.Id3Arguments.Encoding.Utf16:
+                    output += "--id3v2-utf16 ";
+                    break;
+            }
+
+            if (ExtraTags.Count != 0) {
+                for (var i = ExtraTags.Count - 1; i >= 0; i--) {
+                    var tmp = ExtraTags[i];
+                    if (tmp != null) {
+                        output += "--tv " + tmp.Id + "=" + tmp.Value + " ";
+                    }
+                }
+            }
+
+            return output;
         }
     }
 }

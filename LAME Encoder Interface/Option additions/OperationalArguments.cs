@@ -1,6 +1,6 @@
 ﻿namespace LameEncoderInterface.OptionAdditions
 {
-    public static class Operational
+    public static class OperationalArguments
     {
         public enum ReplayGainMode
         {

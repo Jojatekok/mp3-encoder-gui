@@ -274,8 +274,9 @@ namespace MP3EncoderGUI
                 SamplingFrequencySelectorNonVbr.UpdateValidValues(BitrateSelectorNonVbr.GetAvailableMp3Types());
 
             } else {
-                BitrateSelectorNonVbr.UpdateValidValues(Mp3Type.All);
-                SamplingFrequencySelectorNonVbr.UpdateValidValues(Mp3Type.All);
+                const Mp3Type allMp3Types = Mp3Type.Mpeg10 | Mp3Type.Mpeg20 | Mp3Type.Mpeg25;
+                BitrateSelectorNonVbr.UpdateValidValues(allMp3Types);
+                SamplingFrequencySelectorNonVbr.UpdateValidValues(allMp3Types);
             }
 
             GridQualityOptionsNonVbr.Visibility = Visibility.Visible;
@@ -385,13 +386,13 @@ namespace MP3EncoderGUI
             }
 
             // Dispose the previous LAME process if necessary
-            if (_lameProc != null) { _lameProc.Dispose(); }
-
-            _lameProc = new LameProcess(inputFile, outputFile, Helper.GetEncodingParams(this));
-            _lameProc.ProgressChanged += LameProc_ProgressChanged;
-            _lameProc.Disposed += LameProc_Disposed;
+            if (_lameProc != null) _lameProc.Dispose();
 
             try {
+                _lameProc = new LameProcess(inputFile, outputFile, Helper.GetEncodingParams(this));
+                _lameProc.ProgressChanged += LameProc_ProgressChanged;
+                _lameProc.InputFileRemovalFailed += LameProc_InputFileRemovalFailed;
+                _lameProc.Disposed += LameProc_Disposed;
                 _lameProc.Start();
 
             } catch (Exception ex) {
@@ -480,6 +481,15 @@ namespace MP3EncoderGUI
             
             if (e.NewValue == e.Maximum) {
                 _syncContext.Send(_ => ButtonStop.Content = "Ok", null);
+            }
+        }
+
+        private void LameProc_InputFileRemovalFailed(object sender, FileLocationEventArgs e)
+        {
+            var file = e.FilePath;
+            if (Messages.ShowWarning(this, Messages.Warnings.OutputFileIsNotRemovable, file) == MessageBoxResult.Yes) {
+                if (File.Exists(file))
+                    File.Delete(file);
             }
         }
 

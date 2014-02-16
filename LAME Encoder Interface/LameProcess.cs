@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace LameEncoderInterface
@@ -10,7 +11,7 @@ namespace LameEncoderInterface
         #region Events
 
         public event EventHandler<ProgressChangedEventArgs> ProgressChanged;
-        public event EventHandler InputFileRemovalFailed;
+        public event EventHandler<FileLocationEventArgs> InputFileRemovalFailed;
         public event EventHandler Disposed;
 
         #endregion
@@ -50,6 +51,13 @@ namespace LameEncoderInterface
 
         public LameProcess(string lamePath, string inputFile, string outputFile, LameArguments arguments)
         {
+            if (string.IsNullOrWhiteSpace(lamePath))
+                throw new ArgumentNullException(lamePath, Messages.Errors.LameEncoderPathNotSpecified);
+            if (string.IsNullOrWhiteSpace(inputFile))
+                throw new ArgumentNullException(inputFile, Messages.Errors.InputFileNotSpecified);
+            if (string.IsNullOrWhiteSpace(outputFile))
+                throw new ArgumentNullException(outputFile, Messages.Errors.OutputFileNotSpecified);
+
             FileInfo outputFileInfo;
             try {
                 outputFileInfo = new FileInfo(outputFile);
@@ -84,9 +92,9 @@ namespace LameEncoderInterface
             
         }
 
-        public LameProcess(string inputFile, string outputFile) : this(Helper.DefaultLamePath, inputFile, outputFile, null)
+        public LameProcess(string inputFile, string outputFile) : this(Helper.DefaultLamePath, inputFile, outputFile, new LameArguments())
         {
-
+            
         }
 
         public void Start()
@@ -139,9 +147,9 @@ namespace LameEncoderInterface
         private bool DeleteOutput()
         {
             if (!IsRunning || _lameProc.WaitForExit(3000)) {
-                if (File.Exists(OutputFile)) {
+                if (File.Exists(OutputFile))
                     File.Delete(OutputFile);
-                }
+
                 return true; // Success
             }
 
@@ -156,18 +164,21 @@ namespace LameEncoderInterface
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void OnProgressChanged(ProgressChangedEventArgs e)
         {
             if (ProgressChanged != null)
                 ProgressChanged(this, e);
         }
 
-        private void OnInputFileRemovalFailed()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void OnInputFileRemovalFailed(FileLocationEventArgs e)
         {
             if (InputFileRemovalFailed != null)
-                InputFileRemovalFailed(this, null);
+                InputFileRemovalFailed(this, e);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void OnDisposed()
         {
             if (Disposed != null)
@@ -188,7 +199,7 @@ namespace LameEncoderInterface
             if (disposing && !IsDisposed) {
                 if (!_lameProc.HasExited) {
                     _lameProc.Kill();
-                    if (!DeleteOutput()) OnInputFileRemovalFailed();
+                    if (!DeleteOutput()) OnInputFileRemovalFailed(new FileLocationEventArgs(OutputFile));
                 }
 
                 IsDisposed = true;
@@ -209,6 +220,16 @@ namespace LameEncoderInterface
         {
             NewValue = newValue;
             Maximum = maximum;
+        }
+    }
+
+    public sealed class FileLocationEventArgs : EventArgs
+    {
+        public string FilePath { get; private set; }
+
+        public FileLocationEventArgs(string filePath)
+        {
+            FilePath = filePath;
         }
     }
 }

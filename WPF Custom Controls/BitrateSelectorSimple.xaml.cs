@@ -19,7 +19,6 @@ namespace WpfCustomControls
         private static IList<ushort> _validValues;
         private IList<ushort> ValidValues
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _validValues; }
 
             set {
@@ -33,7 +32,6 @@ namespace WpfCustomControls
         private ushort _value;
         public ushort Value
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
             
             set {
@@ -51,7 +49,7 @@ namespace WpfCustomControls
         {
             InitializeComponent();
 
-            ValidValues = LameEncoderInterface.MP3Types.All.Bitrates;
+            ValidValues = LameEncoderInterface.MP3Types.Any.Bitrates;
             ComboBox1.SelectedIndex = 0;
         }
 

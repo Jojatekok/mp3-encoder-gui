@@ -11,7 +11,6 @@ namespace WpfCustomControls
         private byte _value;
         public byte Value
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
 
             set {
@@ -24,7 +23,6 @@ namespace WpfCustomControls
         private byte _minimum;
         public byte Minimum
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _minimum; }
 
             set {
@@ -47,7 +45,6 @@ namespace WpfCustomControls
         private byte _maximum;
         public byte Maximum
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _maximum; }
 
             set {

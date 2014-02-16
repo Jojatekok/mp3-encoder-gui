@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace LameEncoderInterface
 {
@@ -9,8 +10,7 @@ namespace LameEncoderInterface
     {
         Mpeg10 = 1,
         Mpeg20 = 2,
-        Mpeg25 = 4,
-        All = 7
+        Mpeg25 = 4
     }
 }
 
@@ -56,10 +56,7 @@ namespace LameEncoderInterface.MP3Types
 
             return output;
         }
-    }
 
-    public static class All
-    {
         private static readonly IList<ushort> _bitrates = new List<ushort> { 320, 256, 224, 192, 160, 144, 128, 112, 96, 80, 64, 56, 48, 40, 32, 24, 16, 8 };
         public static IList<ushort> Bitrates {
             get { return _bitrates; }

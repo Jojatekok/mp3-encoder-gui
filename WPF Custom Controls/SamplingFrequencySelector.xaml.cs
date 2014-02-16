@@ -18,7 +18,6 @@ namespace WpfCustomControls
         private IList<ushort> _validValues;
         private IList<ushort> ValidValues
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _validValues; }
 
             set {
@@ -46,7 +45,6 @@ namespace WpfCustomControls
         private ushort _value;
         public ushort Value
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
             
             set {
@@ -68,7 +66,7 @@ namespace WpfCustomControls
             ComboBox1.SelectedIndex = 0;
             ComboBox1.ItemStringFormat = "## ###";
 
-            ValidValues = LameEncoderInterface.MP3Types.All.SamplingFrequencies;
+            ValidValues = LameEncoderInterface.MP3Types.Any.SamplingFrequencies;
         }
 
         private void ComboBox1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -99,7 +97,7 @@ namespace WpfCustomControls
         public Mp3Type GetAvailableMp3Types()
         {
             if (Value == 0) {
-                return Mp3Type.All;
+                return Mp3Type.Mpeg10 | Mp3Type.Mpeg20 | Mp3Type.Mpeg25;
             }
 
             if (LameEncoderInterface.MP3Types.Mpeg10.SamplingFrequencies.Contains(Value)) {

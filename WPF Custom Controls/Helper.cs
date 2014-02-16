@@ -8,7 +8,6 @@ namespace WpfCustomControls
     {
         private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         internal static CultureInfo InvariantCulture {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _invariantCulture; }
         }
     }

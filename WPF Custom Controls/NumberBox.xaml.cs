@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,7 +21,6 @@ namespace WpfCustomControls
         private uint? _value;
         public uint? Value
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _value; }
 
             set {
@@ -52,7 +50,6 @@ namespace WpfCustomControls
 
         private uint _minimum;
         public uint Minimum {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _minimum; }
 
             set {
@@ -65,7 +62,6 @@ namespace WpfCustomControls
 
         private uint _maximum = uint.MaxValue;
         public uint Maximum {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _maximum; }
 
             set {
@@ -79,7 +75,6 @@ namespace WpfCustomControls
         private bool _isReadOnly;
         public bool IsReadOnly
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _isReadOnly; }
 
             set

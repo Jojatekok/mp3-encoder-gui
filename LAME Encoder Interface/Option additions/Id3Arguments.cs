@@ -1,28 +1,23 @@
 ﻿using System.Collections.Generic;
 
-namespace LameEncoderInterface.OptionAdditions
+namespace LameEncoderInterface.OptionAdditions.Id3Arguments
 {
-    public static class Id3Tags
+    public sealed class Genre
     {
-        #region Genres
+        public string Name { get; private set; }
+        public byte? Id { get; private set; }
 
-        public sealed class Genre
+        public Genre(string name)
         {
-            public string Name { get; private set; }
-            public byte? Id { get; private set; }
-
-            public Genre(string name)
-            {
-                Name = name;
-            }
-
-            public Genre(byte id)
-            {
-                Id = id;
-            }
+            Name = name;
         }
 
-        private static readonly Dictionary<string, byte> _genres = new Dictionary<string, byte> {
+        public Genre(byte id)
+        {
+            Id = id;
+        }
+
+        private static readonly Dictionary<string, byte> _defaultGenres = new Dictionary<string, byte> {
             { "A Cappella", 123 },
             { "Acid", 34 },
             { "Acid Jazz", 74 },
@@ -172,32 +167,27 @@ namespace LameEncoderInterface.OptionAdditions
             { "Trip-Hop", 27 },
             { "Vocal", 28 }
         };
-        public static Dictionary<string, byte> Genres {
-            get { return _genres; }
-        }
-
-        #endregion
-
-        #region Other additions
-
-        public enum Encoding
+        public static Dictionary<string, byte> DefaultGenres
         {
-            Latin1 = 0,
-            Utf16 = 1
+            get { return _defaultGenres; }
         }
+    }
 
-        public sealed class ExtraTag
+    public enum Encoding
+    {
+        Latin1 = 0,
+        Utf16 = 1
+    }
+
+    public sealed class ExtraTag
+    {
+        public string Id { get; private set; }
+        public object Value { get; private set; }
+
+        public ExtraTag(string id, object value)
         {
-            public string Id { get; private set; }
-            public object Value { get; private set; }
-
-            public ExtraTag(string id, object value)
-            {
-                Id = id;
-                Value = value;
-            }
+            Id = id;
+            Value = value;
         }
-
-        #endregion
     }
 }

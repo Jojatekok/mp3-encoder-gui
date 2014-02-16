@@ -8,12 +8,11 @@ namespace WpfCustomControls
     {
         #region Declarations
 
-        private static readonly List<ushort> ValidValues = (List<ushort>)LameEncoderInterface.MP3Types.All.Bitrates;
+        private static readonly List<ushort> ValidValues = (List<ushort>)LameEncoderInterface.MP3Types.Any.Bitrates;
 
         private ushort _minValue;
         public ushort MinValue
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _minValue; }
             
             set {
@@ -26,7 +25,6 @@ namespace WpfCustomControls
         private ushort _maxValue;
         public ushort MaxValue
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get { return _maxValue; }
             
             set {

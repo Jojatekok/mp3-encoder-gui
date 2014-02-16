@@ -42,9 +42,9 @@
   <ItemGroup>
     <Compile Include="Helper.cs" />
     <Compile Include="Mp3Types.cs" />
-    <Compile Include="Option additions\Operational.cs" />
-    <Compile Include="Option additions\Quality.cs" />
-    <Compile Include="Option additions\Id3Tags.cs" />
+    <Compile Include="Option additions\OperationalArguments.cs" />
+    <Compile Include="Option additions\QualityArguments.cs" />
+    <Compile Include="Option additions\Id3Arguments.cs" />
     <Compile Include="LameArguments.cs" />
     <Compile Include="LameProcess.cs" />
     <Compile Include="Messages.cs" />
